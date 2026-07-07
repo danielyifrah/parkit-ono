@@ -1,0 +1,192 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Bell, Globe, CircleDollarSign, Lock, Clock, CreditCard, LogOut,
+  Pencil, ShieldCheck, Building2, ChevronLeft, User,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useParking } from '../context/ParkingContext';
+import { isOwner } from '../lib/roles';
+import Button from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
+import EditProfileModal from '../components/profile/EditProfileModal';
+import SecurityModal from '../components/profile/SecurityModal';
+import './Profile.css';
+
+const generalSettings = [
+  { icon: Bell, title: 'העדפות התראות', comingSoon: true },
+  { icon: Globe, title: 'שפה', subtitle: 'עברית', comingSoon: true },
+  { icon: CircleDollarSign, title: 'מטבע', subtitle: 'שקל חדש (₪) ILS' },
+  { icon: Lock, title: 'אבטחה וסיסמה', action: 'security' },
+];
+
+const accountActions = [
+  { icon: Clock, title: 'היסטוריית חניות', path: '/history' },
+  { icon: CreditCard, title: 'אמצעי תשלום' },
+  { icon: LogOut, title: 'התנתקות', danger: true },
+];
+
+export default function Profile() {
+  const { user, logout } = useAuth();
+  const { getBookingsByUserId } = useParking();
+  const navigate = useNavigate();
+  const [editOpen, setEditOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
+  const userBookings = getBookingsByUserId(user?.id || '');
+  const stats = {
+    savedParkings: userBookings.filter((b) => b.status === 'saved' || b.status === 'scheduled').length,
+    completedParkings: userBookings.filter((b) => b.status === 'completed').length,
+  };
+  const showPartnerPortal = isOwner(user);
+
+  const handleAction = (item) => {
+    if (item.danger) {
+      logout();
+      navigate('/login');
+    } else if (item.path) {
+      navigate(item.path);
+    }
+  };
+
+  const handleSetting = (item) => {
+    if (item.comingSoon) return;
+    if (item.action === 'security') {
+      setSecurityOpen(true);
+    }
+  };
+
+  const contactLine = user?.phone || user?.email;
+
+  return (
+    <div className="page profile-page">
+      <div className="profile-page__layout">
+        <aside className="profile-page__aside">
+          <div className="profile-card card">
+            <div className="profile-card__top">
+              <div className="profile-card__avatar">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="" className="profile-card__avatar-img" />
+                ) : (
+                  <Icon icon={User} size={32} className="app-icon--muted" />
+                )}
+              </div>
+              <div className="profile-card__info">
+                <h2 className="profile-card__name">{user?.name || 'משתמש'}</h2>
+                <p className="profile-card__email">{contactLine}</p>
+                {user?.role === 'admin' && (
+                  <span className="profile-card__role-badge">מנהל מערכת</span>
+                )}
+                {user?.role === 'owner' && (
+                  <span className="profile-card__role-badge profile-card__role-badge--owner">בעל חניה</span>
+                )}
+                <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+                  <Icon icon={Pencil} size={14} />
+                  עריכת פרופיל
+                </Button>
+              </div>
+            </div>
+            <div className="profile-card__stats">
+              <div className="profile-card__stat">
+                <span className="profile-card__stat-label">חניות שמורות</span>
+                <span className="profile-card__stat-value">{stats.savedParkings}</span>
+              </div>
+              <div className="profile-card__stat-divider" />
+              <div className="profile-card__stat">
+                <span className="profile-card__stat-label">חניות שהושלמו</span>
+                <span className="profile-card__stat-value">{stats.completedParkings}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-footer desktop-only">
+            <p>
+              <Icon icon={ShieldCheck} size={16} className="app-icon--success" />
+              הפרטים שלכם מוצפנים ולא משותפים עם צד שלישי
+            </p>
+            <p className="profile-footer__version">PARKIT V. 2.4.0</p>
+          </div>
+
+          {showPartnerPortal && (
+            <div className="profile-partner-link">
+              <Button variant="ghost" onClick={() => navigate('/partner')}>
+                <Icon icon={Building2} size={18} />
+                כניסה לפורטל שותפים
+              </Button>
+            </div>
+          )}
+
+          {user?.role === 'admin' && (
+            <div className="profile-admin-note card">
+              <p>דשבורד ניהול מערכת — בקרוב</p>
+            </div>
+          )}
+        </aside>
+
+        <div className="profile-page__main">
+          <div className="profile-settings-col">
+            <h3 className="settings-group-title">הגדרות כלליות</h3>
+            <div className="settings-group card">
+              {generalSettings.map((item) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  className={`settings-item ${item.comingSoon ? 'settings-item--soon' : ''}`}
+                  onClick={() => handleSetting(item)}
+                  disabled={item.comingSoon}
+                >
+                  <span className="settings-item__icon">
+                    <Icon icon={item.icon} size={18} className="app-icon--primary" />
+                  </span>
+                  <div className="settings-item__text">
+                    <span>{item.title}</span>
+                    {item.subtitle && <small>{item.subtitle}</small>}
+                  </div>
+                  {item.comingSoon ? (
+                    <span className="settings-item__soon">בקרוב</span>
+                  ) : (
+                    <Icon icon={ChevronLeft} size={18} className="settings-item__arrow app-icon--muted" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="profile-settings-col">
+            <h3 className="settings-group-title">חשבון ופעולות</h3>
+            <div className="settings-group card">
+              {accountActions.map((item) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  className={`settings-item ${item.danger ? 'settings-item--danger' : ''}`}
+                  onClick={() => handleAction(item)}
+                >
+                  <span className={`settings-item__icon ${item.danger ? 'settings-item__icon--danger' : ''}`}>
+                    <Icon icon={item.icon} size={18} className={item.danger ? 'app-icon--danger' : 'app-icon--primary'} />
+                  </span>
+                  <div className="settings-item__text">
+                    <span>{item.title}</span>
+                  </div>
+                  {!item.danger && (
+                    <Icon icon={ChevronLeft} size={18} className="settings-item__arrow app-icon--muted" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="profile-footer profile-footer--mobile-bottom mobile-only">
+        <p>
+          <Icon icon={ShieldCheck} size={16} className="app-icon--success" />
+          הפרטים שלכם מוצפנים ולא משותפים עם צד שלישי
+        </p>
+        <p className="profile-footer__version">PARKIT V. 2.4.0</p>
+      </div>
+
+      <EditProfileModal isOpen={editOpen} onClose={() => setEditOpen(false)} />
+      <SecurityModal isOpen={securityOpen} onClose={() => setSecurityOpen(false)} />
+    </div>
+  );
+}

@@ -1,0 +1,57 @@
+.stat-card {
+  padding: 16px;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-card--default {
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.stat-card--primary {
+  background: var(--color-secondary);
+  color: white;
+}
+
+.stat-card--dark {
+  background: var(--color-primary);
+  color: white;
+}
+
+.stat-card__title {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.stat-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-card--default .stat-card__value {
+  color: var(--color-primary);
+}
+
+.stat-card__subtitle {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.stat-card__progress {
+  margin-top: 8px;
+  height: 4px;
+  background: rgba(0, 59, 149, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.stat-card__progress-bar {
+  height: 100%;
+  background: var(--color-secondary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}

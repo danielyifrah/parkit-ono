@@ -1,0 +1,83 @@
+/**
+ * פריסות דסקטופ משותפות — מסכי תוכן (לא מפה)
+ * מובייל: עמודה אחת מלאה
+ * דסקטופ: ניצול רוחב מסך עד container-max
+ */
+
+@media (min-width: 768px) {
+  .page {
+    padding: 28px 40px 40px;
+  }
+
+  /* רשימות כרטיסים — 2 עמודות */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .cards-grid .booking-card {
+    margin-bottom: 0;
+  }
+
+  /* פריסת 2 עמודות: תוכן ראשי + צד */
+  .page-split {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .page-split--reverse {
+    grid-template-columns: 380px 1fr;
+  }
+
+  /* פריסת 2 עמודות שוות */
+  .page-split--equal {
+    grid-template-columns: 1fr 1fr;
+  }
+
+.support-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .support-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .support-layout .support-card {
+    margin-bottom: 0;
+    height: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* מובייל: תמיכה — עמודה אחת */
+.support-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* מובייל: page-split — עמודה אחת */
+.page-split,
+.page-split--equal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.booking-page__layout.page-split {
+  gap: 16px;
+}

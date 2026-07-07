@@ -1,0 +1,78 @@
+.security-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.security-form__intro {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.security-form__error {
+  font-size: 0.8125rem;
+  color: var(--color-error);
+}
+
+.security-form__success {
+  font-size: 0.8125rem;
+  color: var(--color-success);
+}
+
+.security-form__biometric {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.security-form__biometric-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: start;
+}
+
+.security-form__biometric-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  opacity: 0.7;
+}
+
+.security-form__biometric-item + .security-form__biometric-item {
+  border-top: 1px solid var(--color-border);
+}
+
+.security-form__biometric-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EFF6FF;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.security-form__biometric-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.security-form__soon {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 3px 8px;
+  border-radius: 999px;
+}

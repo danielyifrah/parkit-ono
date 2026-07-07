@@ -1,0 +1,25 @@
+.app-icon {
+  color: currentColor;
+  flex-shrink: 0;
+  display: block;
+}
+
+.app-icon--primary {
+  color: var(--color-primary);
+}
+
+.app-icon--secondary {
+  color: var(--color-secondary);
+}
+
+.app-icon--muted {
+  color: var(--color-text-secondary);
+}
+
+.app-icon--success {
+  color: var(--color-success);
+}
+
+.app-icon--white {
+  color: white;
+}

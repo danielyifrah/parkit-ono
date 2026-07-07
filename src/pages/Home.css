@@ -1,0 +1,246 @@
+.home-scheduled-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 12px 16px 0;
+  flex-shrink: 0;
+}
+
+.home-scheduled-banner__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.home-page {
+  height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.home-page--empty {
+  height: auto;
+  min-height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.home-mobile-top {
+  flex-shrink: 0;
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.home-map-area {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  height: 100%;
+}
+
+.home-map-area .parking-map {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.home-filters-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  padding-block: 10px 14px;
+}
+
+.home-filters-scroll .filter-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  padding: 0 16px;
+  gap: 8px;
+  background: transparent;
+}
+
+.home-filters-scroll .filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.home-filters-scroll .filter-bar__chip {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+.home-search {
+  padding: 12px 16px 6px;
+}
+
+.home-search__locate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.home-search__locate:hover {
+  background: var(--color-bg);
+}
+
+.home-mobile-card {
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 12px;
+  z-index: 20;
+}
+
+.home-mobile-card .parking-card--compact {
+  box-shadow: var(--shadow-md);
+}
+
+.home-no-results {
+  position: absolute;
+  z-index: 25;
+  padding: 20px;
+  max-width: 320px;
+  box-shadow: var(--shadow-md);
+}
+
+.home-no-results__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  background: var(--color-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-no-results__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.home-no-results__text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 767px) {
+  .home-no-results {
+    inset-inline: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .home-no-results {
+    top: 24px;
+    inset-inline-start: 24px;
+  }
+}
+
+.home-sidebar {
+  display: none;
+}
+
+.home-recent-searches {
+  margin-top: 8px;
+}
+
+.recent-search-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+  text-align: start;
+  color: var(--color-text);
+  transition: color 0.15s;
+}
+
+.recent-search-item:hover {
+  color: var(--color-secondary);
+}
+
+.recent-search-time {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.empty-state-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  background: var(--color-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-text {
+  margin: 8px 0 24px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .home-page {
+    height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+  }
+
+  .home-layout {
+    flex-direction: row;
+  }
+
+  .home-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: var(--color-card);
+    border-inline-start: 1px solid var(--color-border);
+    padding: 24px;
+    overflow-y: auto;
+    gap: 24px;
+  }
+}
+
+/* עמוד בית ללא פס תחתון (לא אמור לקרות בדרך כלל) */
+.app-main--no-bottom-nav .home-page {
+  height: calc(100vh - var(--header-height));
+}

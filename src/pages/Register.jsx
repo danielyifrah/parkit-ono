@@ -1,0 +1,64 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+
+export default function Register() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    register(name, email, password);
+    navigate('/');
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card card">
+        <div className="auth-logo">
+          <span className="auth-logo-icon">P</span>
+          <span className="auth-logo-text">Parkit</span>
+        </div>
+        <h1 className="auth-title">הרשמה</h1>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <Input
+            label="שם מלא"
+            placeholder="ישראל ישראלי"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <Input
+            label="אימייל"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            label="סיסמה"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <Button type="submit" fullWidth size="lg">
+            הרשמה
+          </Button>
+        </form>
+
+        <p className="auth-switch">
+          כבר יש לך חשבון? <Link to="/login">התחברות</Link>
+        </p>
+      </div>
+    </div>
+  );
+}

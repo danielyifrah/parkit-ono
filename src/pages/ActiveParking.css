@@ -1,0 +1,286 @@
+.active-parking {
+  padding-bottom: 24px;
+}
+
+.active-parking__lock-notice,
+.saved-parking__lock-notice {
+  margin-bottom: 12px;
+}
+
+.active-parking__extend-info {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.active-parking__summary-total {
+  font-size: 1.125rem;
+  margin-bottom: 8px;
+}
+
+.active-parking__summary-discount {
+  color: var(--color-success);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.active-parking__summary-payment {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.active-parking__summary-prompt {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.active-parking__summary-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.saved-parking__countdown-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin-top: 8px;
+}
+
+.booking-page__availability-hours,
+.booking-page__max-duration {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin-top: 8px;
+}
+
+
+.active-parking__timer-card {
+  padding: 28px 24px 32px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.active-parking__timer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  margin: 24px 0;
+  direction: ltr;
+}
+
+.active-parking__time-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+.active-parking__digits {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.active-parking__time-unit small {
+  font-size: 0.625rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin-top: 6px;
+}
+
+.active-parking__separator {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  padding-bottom: 18px;
+}
+
+.active-parking__price-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.active-parking__price {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.active-parking__rate {
+  display: inline-block;
+  padding: 5px 14px;
+  background: var(--color-bg);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.active-parking__details {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.active-parking__details-title {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  text-align: start;
+}
+
+.active-parking__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.active-parking__row-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EFF6FF;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.active-parking__row-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: start;
+}
+
+.active-parking__row-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  text-align: start;
+}
+
+.active-parking__row-flex {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  gap: 12px;
+}
+
+.active-parking__pill {
+  padding: 4px 12px;
+  background: var(--color-bg);
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.active-parking__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.active-parking__end-btn,
+.active-parking__extend-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 12px;
+  border-radius: var(--radius);
+  text-align: center;
+  min-height: 130px;
+}
+
+.active-parking__end-btn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.active-parking__extend-btn {
+  background: white;
+  border: 2px solid #DBEAFE;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.active-parking__action-icon-wrap {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+}
+
+.active-parking__action-icon-wrap--outline {
+  background: #EFF6FF;
+}
+
+.active-parking__end-btn strong,
+.active-parking__extend-btn strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.active-parking__end-btn small {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.active-parking .info-banner {
+  margin-top: 0;
+}
+
+.active-parking__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.active-parking__primary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .active-parking__layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .active-parking__timer-card {
+    padding: 40px 32px 48px;
+  }
+
+  .active-parking__digits {
+    font-size: 3rem;
+  }
+
+  .active-parking__price {
+    font-size: 2.5rem;
+  }
+
+  .active-parking__details {
+    position: sticky;
+    top: calc(var(--header-height) + 16px);
+  }
+
+  .active-parking__actions {
+    max-width: 480px;
+  }
+}

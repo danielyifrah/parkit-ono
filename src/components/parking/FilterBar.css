@@ -1,0 +1,221 @@
+.filter-bar-wrap {
+  width: 100%;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  overflow-x: auto;
+  background: transparent;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-bar__chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--color-text);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.filter-bar__chip:hover {
+  border-color: #D1D5DB;
+}
+
+.filter-bar__chip--active {
+  border-color: var(--color-primary);
+  background: #EFF6FF;
+  color: var(--color-primary);
+}
+
+.filter-bar__chip--active .app-icon {
+  color: var(--color-primary);
+}
+
+.filter-bar__chip--clear {
+  color: var(--color-text-secondary);
+}
+
+.filter-bar__chip--clear-active {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+  background: #EFF6FF;
+}
+
+.filter-bar__chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filter-bar__chip:disabled:hover {
+  border-color: var(--color-border);
+}
+
+.filter-bar__chevron {
+  color: var(--color-text-secondary);
+  transition: transform 0.15s;
+}
+
+.filter-bar__chevron--open {
+  transform: rotate(180deg);
+}
+
+.filter-bar__panel {
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.filter-bar__panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filter-bar__panel-content--full {
+  gap: 16px;
+}
+
+.filter-bar__clear {
+  color: var(--color-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 8px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.filter-fields__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-fields__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-align: start;
+}
+
+.filter-fields__select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-size: 0.875rem;
+  text-align: start;
+}
+
+.filter-fields__toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-fields__toggle-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  background: white;
+  transition: all 0.15s;
+}
+
+.filter-fields__toggle-btn--active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.filter-fields__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-fields__option {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-size: 0.875rem;
+  text-align: start;
+  transition: all 0.15s;
+}
+
+.filter-fields__option--active {
+  border-color: var(--color-primary);
+  background: #EFF6FF;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.filter-fields__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 6px 0;
+  text-align: start;
+}
+
+/* Sidebar filters (desktop) */
+.sidebar-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-filters__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-filters__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sidebar-filters .filter-fields__section + .filter-fields__section {
+  margin-top: 4px;
+}
+
+.sidebar-filters__clear {
+  color: var(--color-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sidebar-filters__clear:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.sidebar-filters__clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

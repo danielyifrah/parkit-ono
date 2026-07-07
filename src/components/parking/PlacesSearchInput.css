@@ -1,0 +1,33 @@
+.places-search__icon-end {
+  pointer-events: auto;
+}
+
+/* תפריט ההשלמות של Google — מעל המפה והכרטיסים */
+.pac-container {
+  z-index: 10000 !important;
+  font-family: Rubik, sans-serif;
+  direction: rtl;
+  text-align: right;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  margin-top: 4px;
+}
+
+.pac-item {
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.pac-item:hover {
+  background: var(--color-bg);
+}
+
+.pac-item-query {
+  font-weight: 500;
+}
+
+.pac-icon {
+  margin-inline-start: 8px;
+}

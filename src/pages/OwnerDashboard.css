@@ -1,0 +1,136 @@
+.owner-dashboard {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.owner-dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.owner-dashboard__brand {
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.owner-dashboard__logo {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.owner-dashboard__subtitle {
+  font-size: 0.6rem;
+  color: var(--color-text-secondary);
+  letter-spacing: 1.2px;
+}
+
+.owner-dashboard__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.owner-dashboard__header-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.625rem;
+  color: var(--color-text);
+  background: white;
+}
+
+.owner-dashboard__content {
+  max-width: 800px;
+}
+
+.owner-dashboard__section {
+  margin-bottom: 28px;
+}
+
+.owner-dashboard__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.owner-dashboard__view-all {
+  color: var(--color-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.owner-dashboard__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.owner-dashboard__promo {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #EDE9FE 0%, #DBEAFE 100%);
+  border: none;
+  margin-bottom: 8px;
+}
+
+.owner-dashboard__promo-icon {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.owner-dashboard__promo h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.owner-dashboard__promo p {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.owner-dashboard__promo .btn {
+  margin-top: 12px;
+}
+
+.owner-dashboard__back {
+  text-align: center;
+  padding-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .owner-dashboard__header {
+    padding: 16px 24px;
+  }
+
+  .owner-dashboard__content {
+    padding-top: 24px;
+  }
+}

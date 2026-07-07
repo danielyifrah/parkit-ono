@@ -1,0 +1,217 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  MapPin,
+  Star,
+  Clock,
+  Calendar,
+  CreditCard,
+  ChevronRight,
+  Image,
+  Timer,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useParking } from '../context/ParkingContext';
+import { calculateBookingPrice, formatDurationLabel } from '../lib/bookingPricing';
+import Button from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
+import StarRating from '../components/ui/StarRating';
+import { Textarea } from '../components/ui/Input';
+import './BookingHistoryDetails.css';
+
+const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+const typeLabels = {
+  private: 'חניה פרטית',
+  public: 'חניה ציבורית',
+  office: 'חניה משרדית',
+};
+
+function formatDisplayDate(dateStr) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function getDayName(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return HEBREW_DAYS[new Date(year, month - 1, day).getDay()];
+}
+
+export default function BookingHistoryDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { getBookingById, getParkingById } = useParking();
+  const booking = getBookingById(id);
+  const parking = booking ? getParkingById(booking.parkingId) : null;
+
+  const [rating, setRating] = useState(booking?.review?.rating ?? 0);
+  const [reviewText, setReviewText] = useState(booking?.review?.text ?? '');
+  const [savedReview, setSavedReview] = useState(booking?.review ?? null);
+
+  if (!booking || booking.userId !== user?.id || booking.status !== 'completed' || !parking) {
+    return (
+      <div className="page">
+        <div className="empty-state card">
+          <h2>הזמנה לא נמצאה</h2>
+          <Button onClick={() => navigate('/history')}>חזרה להיסטוריה</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const durationMinutes = Math.round(booking.durationHours * 60);
+  const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
+  const hasReview = Boolean(savedReview?.rating);
+
+  const handleSubmitReview = () => {
+    if (rating === 0) return;
+    setSavedReview({ rating, text: reviewText.trim() });
+  };
+
+  return (
+    <div className="page booking-history-details">
+      <button type="button" className="page-back" onClick={() => navigate('/history')}>
+        <Icon icon={ChevronRight} size={18} />
+        חזרה להיסטוריה
+      </button>
+
+      <div className="booking-history-details__parking card">
+        {parking.image ? (
+          <img
+            src={parking.image}
+            alt=""
+            className="booking-history-details__hero"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="booking-history-details__hero image-placeholder">
+            <Icon icon={Image} size={40} className="app-icon--muted" />
+          </div>
+        )}
+
+        <div className="booking-history-details__parking-body">
+          <div className="booking-history-details__parking-header">
+            <div>
+              <h1 className="booking-history-details__title">{parking.name}</h1>
+              <p className="booking-history-details__address">
+                <Icon icon={MapPin} size={14} className="app-icon--muted" />
+                {parking.address}
+              </p>
+            </div>
+            <div className="booking-history-details__rating">
+              <span className="booking-history-details__rating-value">
+                <Icon icon={Star} size={16} className="app-icon--primary" />
+                {parking.rating}
+              </span>
+              <span className="booking-history-details__reviews">({parking.reviewsCount} ביקורות)</span>
+            </div>
+          </div>
+
+          <div className="booking-history-details__stats">
+            <div className="booking-history-details__stat">
+              <span className="booking-history-details__stat-value">₪{parking.pricePerHour}</span>
+              <span className="booking-history-details__stat-label">לשעה</span>
+            </div>
+            <div className="booking-history-details__stat">
+              <span className="booking-history-details__stat-value">{typeLabels[parking.type]}</span>
+              <span className="booking-history-details__stat-label">סוג</span>
+            </div>
+            <div className="booking-history-details__stat">
+              <span className="booking-history-details__stat-value">{parking.covered ? 'מקורה' : 'פתוחה'}</span>
+              <span className="booking-history-details__stat-label">מקום {parking.spotNumber}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section className="booking-history-details__section card">
+        <h2 className="booking-history-details__section-title">פרטי החניה שבוצעה</h2>
+        <div className="booking-history-details__info-grid">
+          <div className="booking-history-details__info-item">
+            <Icon icon={Calendar} size={16} className="app-icon--muted" />
+            <div>
+              <span className="booking-history-details__info-label">תאריך</span>
+              <span className="booking-history-details__info-value">
+                {formatDisplayDate(booking.date)} · יום {getDayName(booking.date)}
+              </span>
+            </div>
+          </div>
+          <div className="booking-history-details__info-item">
+            <Icon icon={Clock} size={16} className="app-icon--muted" />
+            <div>
+              <span className="booking-history-details__info-label">שעות</span>
+              <span className="booking-history-details__info-value" dir="ltr">
+                {booking.startTime} – {booking.endTime}
+              </span>
+            </div>
+          </div>
+          <div className="booking-history-details__info-item">
+            <Icon icon={Timer} size={16} className="app-icon--muted" />
+            <div>
+              <span className="booking-history-details__info-label">משך החניה</span>
+              <span className="booking-history-details__info-value">
+                {formatDurationLabel(durationMinutes)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <span className="badge badge--inactive booking-history-details__status">הושלמה</span>
+      </section>
+
+      <section className="booking-history-details__section card">
+        <h2 className="booking-history-details__section-title">תשלום</h2>
+        <div className="booking-history-details__payment">
+          <div className="booking-history-details__payment-row">
+            <span>מחיר בסיס</span>
+            <span>₪{pricing.base}</span>
+          </div>
+          {pricing.discountPercent > 0 && (
+            <div className="booking-history-details__payment-row booking-history-details__payment-row--discount">
+              <span>{pricing.discountLabel}</span>
+              <span>−{pricing.discountPercent}%</span>
+            </div>
+          )}
+          <div className="booking-history-details__payment-total">
+            <span>סה״כ שולם</span>
+            <span className="booking-history-details__payment-amount">₪{booking.totalPrice}</span>
+          </div>
+          <div className="booking-history-details__payment-method">
+            <Icon icon={CreditCard} size={16} className="app-icon--muted" />
+            <span>{booking.paymentMethod}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="booking-history-details__section card">
+        <h2 className="booking-history-details__section-title">סיכום וביקורת</h2>
+
+        {hasReview ? (
+          <div className="booking-history-details__review-display">
+            <StarRating value={savedReview.rating} readonly size={20} />
+            {savedReview.text && (
+              <p className="booking-history-details__review-text">{savedReview.text}</p>
+            )}
+            <p className="booking-history-details__review-thanks">תודה על הביקורת!</p>
+          </div>
+        ) : (
+          <div className="booking-history-details__review-form">
+            <p className="booking-history-details__review-prompt">איך הייתה החוויה?</p>
+            <StarRating value={rating} onChange={setRating} size={28} />
+            <Textarea
+              label="חוות דעת קצרה (אופציונלי)"
+              placeholder="ספרו על החניה, הנגישות, הניקיון..."
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              rows={3}
+              maxLength={300}
+            />
+            <Button fullWidth onClick={handleSubmitReview} disabled={rating === 0}>
+              שליחת ביקורת
+            </Button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

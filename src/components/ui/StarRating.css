@@ -1,0 +1,30 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.star-rating__star {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+  line-height: 0;
+}
+
+.star-rating__star:not(:disabled) {
+  cursor: pointer;
+}
+
+.star-rating__star--filled svg {
+  fill: currentColor;
+}
+
+.star-rating__star .app-icon--primary {
+  color: #F59E0B;
+}
+
+.star-rating__star .app-icon--muted {
+  color: var(--color-border);
+}

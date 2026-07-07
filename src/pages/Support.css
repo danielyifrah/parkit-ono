@@ -1,0 +1,29 @@
+.support-faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.support-faq {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.support-faq:last-child {
+  border-bottom: none;
+}
+
+.support-faq__icon {
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.support-faq--open .support-faq__icon {
+  transform: rotate(0deg);
+}
+
+.support-faq__answer {
+  padding: 0 0 14px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+  text-align: start;
+}

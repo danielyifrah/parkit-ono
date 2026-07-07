@@ -1,0 +1,221 @@
+.booking-history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.booking-history-details__parking {
+  overflow: hidden;
+}
+
+.booking-history-details__hero {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.booking-history-details__parking-body {
+  padding: 20px;
+}
+
+.booking-history-details__parking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.booking-history-details__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  text-align: start;
+}
+
+.booking-history-details__address {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__rating {
+  text-align: end;
+  flex-shrink: 0;
+}
+
+.booking-history-details__rating-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.booking-history-details__reviews {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.booking-history-details__stat {
+  padding: 10px 8px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.booking-history-details__stat-value {
+  display: block;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
+.booking-history-details__stat-label {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__section {
+  padding: 20px;
+}
+
+.booking-history-details__section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 16px;
+  text-align: start;
+}
+
+.booking-history-details__info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.booking-history-details__info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.booking-history-details__info-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.booking-history-details__info-value {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.booking-history-details__status {
+  margin-top: 16px;
+}
+
+.booking-history-details__payment {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.booking-history-details__payment-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__payment-row--discount {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.booking-history-details__payment-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.booking-history-details__payment-amount {
+  font-size: 1.375rem;
+  color: var(--color-primary);
+}
+
+.booking-history-details__payment-method {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.booking-history-details__review-prompt {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px;
+}
+
+.booking-history-details__review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.booking-history-details__review-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-history-details__review-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.booking-history-details__review-thanks {
+  font-size: 0.8125rem;
+  color: var(--color-success);
+  font-weight: 600;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .booking-history-details {
+    max-width: 640px;
+  }
+
+  .booking-history-details__hero {
+    height: 200px;
+  }
+
+  .booking-history-details__section,
+  .booking-history-details__parking-body {
+    padding: 24px;
+  }
+}
