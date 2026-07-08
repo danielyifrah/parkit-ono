@@ -21,6 +21,8 @@ export default function ParkingCard({
   variant = 'overlay',
   onViewDetails,
   onEditDetails,
+  onViewPerformance,
+  onOpenSettings,
   showBookButton = true,
 }) {
   const navigate = useNavigate();
@@ -115,7 +117,12 @@ export default function ParkingCard({
           <span className={`badge ${parking.status === 'active' ? 'badge--success' : 'badge--inactive'}`}>
             {parking.status === 'active' ? 'פעילה' : 'לא פעילה'}
           </span>
-          <button type="button" className="parking-card__menu" aria-label="אפשרויות">
+          <button
+            type="button"
+            className="parking-card__menu"
+            aria-label="אפשרויות"
+            onClick={() => onOpenSettings?.(parking)}
+          >
             <Icon icon={MoreVertical} size={18} className="app-icon--muted" />
           </button>
         </div>
@@ -140,9 +147,9 @@ export default function ParkingCard({
             <Icon icon={Pencil} size={16} />
             עריכת זמינות
           </Button>
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={() => onViewPerformance?.(parking)}>
             <Icon icon={BarChart3} size={16} />
-            דוחות וביצועים
+            ביצועי החניה
           </Button>
         </div>
       </div>

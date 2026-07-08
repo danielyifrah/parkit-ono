@@ -1,21 +1,102 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, LifeBuoy, User, Zap, ArrowUpDown } from 'lucide-react';
+import { Plus, LifeBuoy, User, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, FileText, Settings, Snowflake, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
 import { getOwnerStats } from '../data/mockData';
+import { toLocalDateStr } from '../lib/bookingPricing';
+import { formatDisplayDate, getDayName, getSchedulesForDate, normalizeTime } from '../lib/availability';
 import StatCard from '../components/ui/StatCard';
 import ParkingCard from '../components/parking/ParkingCard';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
+import Input, { Select, Textarea } from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
 import Icon from '../components/ui/Icon';
 import './OwnerDashboard.css';
 
+const COMMISSION_RATE = 0.15;
+const RANGE_OPTIONS = [
+  { value: 7, label: '7 ימים אחרונים' },
+  { value: 30, label: 'חודש אחרון' },
+  { value: 180, label: 'חצי שנה אחרונה' },
+  { value: 365, label: 'שנה אחרונה' },
+];
+const DEFAULT_SLOT = { start: '08:00', end: '20:00' };
+
+function normalizeTimeValue(value) {
+  return normalizeTime(value || '00:00');
+}
+
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('שגיאה בקריאת קובץ התמונה'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getRelativeDayLabel(index) {
+  if (index === 0) return 'היום';
+  if (index === 1) return 'מחר';
+  return null;
+}
+
+function buildUpcomingAvailabilityEditor(parking, days = 7) {
+  const result = [];
+  const today = new Date();
+
+  for (let i = 0; i < days; i += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const dateStr = toLocalDateStr(date);
+    const slots = getSchedulesForDate(parking, dateStr).map((slot) => ({
+      start: normalizeTimeValue(slot.start),
+      end: normalizeTimeValue(slot.end),
+    }));
+
+    result.push({
+      date: dateStr,
+      dayName: getDayName(dateStr),
+      relativeLabel: getRelativeDayLabel(i),
+      enabled: slots.length > 0,
+      slots: slots.length > 0 ? slots : [{ ...DEFAULT_SLOT }],
+    });
+  }
+
+  return result;
+}
+
+function getParkingPerformance(parking, days) {
+  const grossIncome = (parking.incomeToday || 0) * days;
+  const netIncome = grossIncome * (1 - COMMISSION_RATE);
+  const totalBookings = Math.round((parking.bookingsToday || 0) * days);
+  const repeatRate = Math.min(0.8, 0.35 + (parking.rating || 0) * 0.08);
+  const returningBookers = Math.round(totalBookings * repeatRate);
+  const uniqueBookers = Math.max(0, totalBookings - returningBookers);
+
+  return {
+    grossIncome,
+    netIncome,
+    totalBookings,
+    avgMonthlyBookings: Math.round((totalBookings / days) * 30),
+    avgMonthlyNetIncome: Math.round((netIncome / days) * 30),
+    uniqueBookers,
+    returningBookers,
+    occupancyRate: Math.min(98, Math.round((totalBookings / Math.max(days * 6, 1)) * 100)),
+  };
+}
+
 export default function OwnerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getParkingsByOwnerId, updateParkingAvailability } = useParking();
+  const {
+    getParkingsByOwnerId,
+    updateParkingUpcomingAvailability,
+    updateParkingDetails,
+    setParkingStatus,
+    removeParking,
+  } = useParking();
   const parkings = getParkingsByOwnerId(user?.id || '');
   const baseStats = getOwnerStats(user?.id || '');
   const ownerStats = {
@@ -25,18 +106,144 @@ export default function OwnerDashboard() {
   };
   const progress = Math.round((ownerStats.monthlyIncome / ownerStats.monthlyGoal) * 100);
 
-  const [editParking, setEditParking] = useState(null);
-  const [availabilityHours, setAvailabilityHours] = useState('');
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [reportsRange, setReportsRange] = useState(30);
+  const [parkingPerformanceTarget, setParkingPerformanceTarget] = useState(null);
+  const [settingsParking, setSettingsParking] = useState(null);
+  const [availabilityParking, setAvailabilityParking] = useState(null);
+  const [settingsForm, setSettingsForm] = useState({
+    image: '',
+    name: '',
+    address: '',
+    spotNumber: '',
+    pricePerHour: '',
+    notes: '',
+  });
+  const [availabilityDays, setAvailabilityDays] = useState([]);
+  const [isGlobalReportsOpen, setIsGlobalReportsOpen] = useState(false);
 
-  const openEdit = (parking) => {
-    setEditParking(parking);
-    setAvailabilityHours(parking.availabilityHours || '08:00 - 20:00');
+  const sortedParkings = useMemo(() => (
+    [...parkings].sort((a, b) => {
+      const statusSort = (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1);
+      if (statusSort !== 0) return statusSort;
+      const incomeSort = sortDirection === 'asc'
+        ? a.incomeToday - b.incomeToday
+        : b.incomeToday - a.incomeToday;
+      if (incomeSort !== 0) return incomeSort;
+      return a.name.localeCompare(b.name, 'he');
+    })
+  ), [parkings, sortDirection]);
+
+  const ownerPerformance = useMemo(() => {
+    return sortedParkings.reduce((acc, parking) => {
+      const stats = getParkingPerformance(parking, reportsRange);
+      return {
+        grossIncome: acc.grossIncome + stats.grossIncome,
+        netIncome: acc.netIncome + stats.netIncome,
+        totalBookings: acc.totalBookings + stats.totalBookings,
+        uniqueBookers: acc.uniqueBookers + stats.uniqueBookers,
+        returningBookers: acc.returningBookers + stats.returningBookers,
+      };
+    }, {
+      grossIncome: 0,
+      netIncome: 0,
+      totalBookings: 0,
+      uniqueBookers: 0,
+      returningBookers: 0,
+    });
+  }, [reportsRange, sortedParkings]);
+
+  const openSettings = (parking) => {
+    setSettingsParking(parking);
+    setSettingsForm({
+      image: parking.image || '',
+      name: parking.name || '',
+      address: parking.address || '',
+      spotNumber: parking.spotNumber || '',
+      pricePerHour: String(parking.pricePerHour ?? ''),
+      notes: parking.notes || '',
+    });
+  };
+
+  const openAvailabilityEditor = (parking) => {
+    setAvailabilityParking(parking);
+    setAvailabilityDays(buildUpcomingAvailabilityEditor(parking));
+  };
+
+  const handleSaveSettings = () => {
+    if (!settingsParking) return;
+    updateParkingDetails(settingsParking.id, settingsForm);
+    setSettingsParking(null);
   };
 
   const handleSaveAvailability = () => {
-    if (!editParking) return;
-    updateParkingAvailability(editParking.id, availabilityHours);
-    setEditParking(null);
+    if (!availabilityParking) return;
+    updateParkingUpcomingAvailability(availabilityParking.id, availabilityDays);
+    setAvailabilityParking(null);
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await readImageAsDataUrl(file);
+    setSettingsForm((prev) => ({ ...prev, image: dataUrl }));
+  };
+
+  const updateDayPlan = (date, updater) => {
+    setAvailabilityDays((prev) => prev.map((day) => (
+      day.date === date ? updater(day) : day
+    )));
+  };
+
+  const toggleDayEnabled = (date, enabled) => {
+    updateDayPlan(date, (day) => ({
+      ...day,
+      enabled,
+      slots: day.slots.length > 0 ? day.slots : [{ ...DEFAULT_SLOT }],
+    }));
+  };
+
+  const addAvailabilitySlot = (date) => {
+    updateDayPlan(date, (day) => ({
+      ...day,
+      enabled: true,
+      slots: [...day.slots, { start: '18:00', end: '20:00' }],
+    }));
+  };
+
+  const updateAvailabilitySlot = (date, index, field, value) => {
+    updateDayPlan(date, (day) => ({
+      ...day,
+      slots: day.slots.map((slot, slotIndex) => (
+        slotIndex === index ? { ...slot, [field]: normalizeTimeValue(value) } : slot
+      )),
+    }));
+  };
+
+  const removeAvailabilitySlot = (date, index) => {
+    updateDayPlan(date, (day) => {
+      const nextSlots = day.slots.filter((_, slotIndex) => slotIndex !== index);
+      return {
+        ...day,
+        slots: nextSlots.length > 0 ? nextSlots : [{ ...DEFAULT_SLOT }],
+        enabled: nextSlots.length > 0 ? day.enabled : false,
+      };
+    });
+  };
+
+  const handleToggleFreeze = () => {
+    if (!settingsParking) return;
+    const nextStatus = settingsParking.status === 'active' ? 'inactive' : 'active';
+    setParkingStatus(settingsParking.id, nextStatus);
+    setSettingsParking(null);
+  };
+
+  const handleRemoveParking = () => {
+    if (!settingsParking) return;
+    const shouldDelete = window.confirm(`להסיר את "${settingsParking.name}"? לא ניתן לבטל פעולה זו.`);
+    if (!shouldDelete) return;
+    removeParking(settingsParking.id);
+    setSettingsParking(null);
   };
 
   return (
@@ -67,7 +274,13 @@ export default function OwnerDashboard() {
         <section className="owner-dashboard__section">
           <div className="owner-dashboard__section-header">
             <h2 className="list-section-title">סקירה כללית</h2>
-            <button type="button" className="owner-dashboard__view-all">הצג הכל</button>
+            <button
+              type="button"
+              className="owner-dashboard__view-all"
+              onClick={() => setIsGlobalReportsOpen(true)}
+            >
+              דו&quot;חות וביצועים
+            </button>
           </div>
           <div className="stats-grid">
             <StatCard
@@ -98,15 +311,35 @@ export default function OwnerDashboard() {
         <section className="owner-dashboard__section">
           <div className="owner-dashboard__section-header">
             <h2 className="list-section-title">החניות שלי</h2>
-            <Icon icon={ArrowUpDown} size={18} className="app-icon--muted" />
+            <div className="owner-dashboard__sort">
+              <Icon icon={ArrowUpDown} size={18} className="app-icon--muted" />
+              <button
+                type="button"
+                className={`owner-dashboard__sort-btn ${sortDirection === 'desc' ? 'owner-dashboard__sort-btn--active' : ''}`}
+                onClick={() => setSortDirection('desc')}
+                aria-label="מיון הכנסה מהגבוה לנמוך"
+              >
+                <Icon icon={ArrowDown} size={14} />
+              </button>
+              <button
+                type="button"
+                className={`owner-dashboard__sort-btn ${sortDirection === 'asc' ? 'owner-dashboard__sort-btn--active' : ''}`}
+                onClick={() => setSortDirection('asc')}
+                aria-label="מיון הכנסה מהנמוך לגבוה"
+              >
+                <Icon icon={ArrowUp} size={14} />
+              </button>
+            </div>
           </div>
           <div className="owner-dashboard__list">
-            {parkings.map((parking) => (
+            {sortedParkings.map((parking) => (
               <ParkingCard
                 key={parking.id}
                 parking={parking}
                 variant="owner"
-                onEditDetails={openEdit}
+                onEditDetails={openAvailabilityEditor}
+                onOpenSettings={openSettings}
+                onViewPerformance={setParkingPerformanceTarget}
               />
             ))}
           </div>
@@ -130,22 +363,235 @@ export default function OwnerDashboard() {
         </div>
       </div>
 
+      <Modal title="דו&quot;חות וביצועים - כלל החניות" isOpen={isGlobalReportsOpen} onClose={() => setIsGlobalReportsOpen(false)}>
+        <Select
+          label="טווח זמן"
+          value={reportsRange}
+          onChange={(e) => setReportsRange(Number(e.target.value))}
+        >
+          {RANGE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Select>
+        <div className="owner-dashboard__report-grid">
+          <div className="owner-dashboard__report-card">
+            <span>הכנסות ברוטו</span>
+            <strong>₪{Math.round(ownerPerformance.grossIncome).toLocaleString()}</strong>
+          </div>
+          <div className="owner-dashboard__report-card">
+            <span>רווח נטו (לאחר 15% עמלה)</span>
+            <strong>₪{Math.round(ownerPerformance.netIncome).toLocaleString()}</strong>
+          </div>
+          <div className="owner-dashboard__report-card">
+            <span>סה&quot;כ הזמנות</span>
+            <strong>{ownerPerformance.totalBookings.toLocaleString()}</strong>
+          </div>
+          <div className="owner-dashboard__report-card">
+            <span>מזמינים שונים / חוזרים</span>
+            <strong>{ownerPerformance.uniqueBookers} / {ownerPerformance.returningBookers}</strong>
+          </div>
+        </div>
+        <Button variant="secondary" fullWidth disabled>
+          <Icon icon={Download} size={16} />
+          הורדת PDF (בקרוב)
+        </Button>
+      </Modal>
+
       <Modal
-        title={`עדכון זמינות — ${editParking?.name || ''}`}
-        isOpen={Boolean(editParking)}
-        onClose={() => setEditParking(null)}
+        title={`ביצועי החניה - ${parkingPerformanceTarget?.name || ''}`}
+        isOpen={Boolean(parkingPerformanceTarget)}
+        onClose={() => setParkingPerformanceTarget(null)}
       >
-        <Input
-          label="שעות זמינות"
-          placeholder="08:00 - 20:00"
-          value={availabilityHours}
-          onChange={(e) => setAvailabilityHours(e.target.value)}
-        />
-        <p className="form-hint" style={{ marginTop: 8 }}>
-          השינוי ישפיע מיד על כל הנהגים באפליקציה.
+        <Select
+          label="טווח זמן"
+          value={reportsRange}
+          onChange={(e) => setReportsRange(Number(e.target.value))}
+        >
+          {RANGE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Select>
+        {parkingPerformanceTarget && (
+          <div className="owner-dashboard__report-grid">
+            {(() => {
+              const stats = getParkingPerformance(parkingPerformanceTarget, reportsRange);
+              return (
+                <>
+                  <div className="owner-dashboard__report-card">
+                    <span>ממוצע הזמנות חודשי</span>
+                    <strong>{stats.avgMonthlyBookings}</strong>
+                  </div>
+                  <div className="owner-dashboard__report-card">
+                    <span>רווח חודשי ממוצע</span>
+                    <strong>₪{stats.avgMonthlyNetIncome.toLocaleString()}</strong>
+                  </div>
+                  <div className="owner-dashboard__report-card">
+                    <span>מזמינים שונים / חוזרים</span>
+                    <strong>{stats.uniqueBookers} / {stats.returningBookers}</strong>
+                  </div>
+                  <div className="owner-dashboard__report-card">
+                    <span>אחוז תפוסה משוער</span>
+                    <strong>{stats.occupancyRate}%</strong>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+        <Button variant="secondary" fullWidth disabled>
+          <Icon icon={FileText} size={16} />
+          הורדת PDF (בקרוב)
+        </Button>
+      </Modal>
+
+      <Modal
+        title={`הגדרות חניה - ${settingsParking?.name || ''}`}
+        isOpen={Boolean(settingsParking)}
+        onClose={() => setSettingsParking(null)}
+      >
+        <div className="owner-dashboard__settings-grid">
+          <Input
+            label="תמונת חניה"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          {settingsForm.image && <img src={settingsForm.image} alt="" className="owner-dashboard__image-preview" />}
+          <Input
+            label="שם החניה"
+            value={settingsForm.name}
+            onChange={(e) => setSettingsForm((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          <Input
+            label="כתובת"
+            value={settingsForm.address}
+            onChange={(e) => setSettingsForm((prev) => ({ ...prev, address: e.target.value }))}
+          />
+          <Input
+            label="מספר מקום חניה"
+            value={settingsForm.spotNumber}
+            onChange={(e) => setSettingsForm((prev) => ({ ...prev, spotNumber: e.target.value }))}
+          />
+          <Input
+            label="תעריף לשעה (₪)"
+            type="number"
+            min="1"
+            value={settingsForm.pricePerHour}
+            onChange={(e) => setSettingsForm((prev) => ({ ...prev, pricePerHour: e.target.value }))}
+          />
+          <Textarea
+            label="הערות"
+            rows={3}
+            value={settingsForm.notes}
+            onChange={(e) => setSettingsForm((prev) => ({ ...prev, notes: e.target.value }))}
+          />
+        </div>
+        <div className="owner-dashboard__settings-actions">
+          <Button variant="secondary" onClick={handleSaveSettings}>
+            <Icon icon={Settings} size={16} />
+            שמירת עריכה
+          </Button>
+          <Button variant="secondary" onClick={handleToggleFreeze}>
+            <Icon icon={Snowflake} size={16} />
+            {settingsParking?.status === 'active' ? 'הקפאת החניה' : 'החזרת החניה לפעילות'}
+          </Button>
+          <Button variant="danger" onClick={handleRemoveParking}>
+            <Icon icon={Trash2} size={16} className="app-icon--white" />
+            הסרת החניה
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        title={`עריכת זמינות — ${availabilityParking?.name || ''}`}
+        isOpen={Boolean(availabilityParking)}
+        onClose={() => setAvailabilityParking(null)}
+        className="modal--wide"
+      >
+        <p className="owner-dashboard__availability-intro">
+          הגדירו מתי החניה פנויה ב־7 הימים הקרובים. אפשר להשאיר ימים סגורים, או להוסיף כמה טווחים באותו יום.
         </p>
-        <Button fullWidth onClick={handleSaveAvailability} style={{ marginTop: 16 }}>
-          שמירה
+
+        <div className="owner-dashboard__availability-editor">
+          {availabilityDays.map((day) => (
+            <div
+              key={day.date}
+              className={`owner-dashboard__availability-day ${day.enabled ? '' : 'owner-dashboard__availability-day--closed'}`}
+            >
+              <div className="owner-dashboard__availability-day-header">
+                <div className="owner-dashboard__availability-day-title">
+                  <strong>
+                    {day.relativeLabel ? `${day.relativeLabel} · ` : ''}
+                    יום {day.dayName}
+                  </strong>
+                  <span>{formatDisplayDate(day.date)}</span>
+                </div>
+
+                <label className="owner-dashboard__day-toggle">
+                  <input
+                    type="checkbox"
+                    checked={day.enabled}
+                    onChange={(e) => toggleDayEnabled(day.date, e.target.checked)}
+                  />
+                  <span>{day.enabled ? 'פנוי' : 'סגור'}</span>
+                </label>
+              </div>
+
+              {day.enabled ? (
+                <div className="owner-dashboard__availability-slots">
+                  {day.slots.map((slot, slotIndex) => (
+                    <div key={`${day.date}-${slotIndex}`} className="owner-dashboard__availability-slot">
+                      <div className="owner-dashboard__time-pair">
+                        <label>
+                          משעה
+                          <input
+                            type="time"
+                            value={slot.start}
+                            onChange={(e) => updateAvailabilitySlot(day.date, slotIndex, 'start', e.target.value)}
+                          />
+                        </label>
+                        <span className="owner-dashboard__time-sep">עד</span>
+                        <label>
+                          עד שעה
+                          <input
+                            type="time"
+                            value={slot.end}
+                            onChange={(e) => updateAvailabilitySlot(day.date, slotIndex, 'end', e.target.value)}
+                          />
+                        </label>
+                      </div>
+
+                      {day.slots.length > 1 && (
+                        <button
+                          type="button"
+                          className="owner-dashboard__remove-slot"
+                          onClick={() => removeAvailabilitySlot(day.date, slotIndex)}
+                          aria-label="הסרת טווח"
+                        >
+                          <Icon icon={Trash2} size={15} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="owner-dashboard__add-slot"
+                    onClick={() => addAvailabilitySlot(day.date)}
+                  >
+                    <Icon icon={Plus} size={14} />
+                    הוסף טווח שעות נוסף
+                  </button>
+                </div>
+              ) : (
+                <p className="owner-dashboard__availability-empty">החניה לא תהיה זמינה ביום זה</p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Button fullWidth onClick={handleSaveAvailability}>
+          שמירת זמינות
         </Button>
       </Modal>
     </div>

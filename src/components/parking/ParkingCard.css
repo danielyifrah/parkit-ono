@@ -212,10 +212,30 @@
 .parking-card__owner-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .parking-card__owner-actions .btn {
   flex: 1;
+  min-width: 160px;
+}
+
+@media (max-width: 767px) {
+  .parking-card__owner-actions {
+    flex-wrap: nowrap;
+  }
+
+  .parking-card__owner-actions .btn {
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .parking-card__owner-actions .btn .app-icon {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 @media (min-width: 768px) {
