@@ -17,8 +17,9 @@ function buildConnectionString() {
   if (databaseUrl) return databaseUrl;
   if (!dbPassword) return null;
 
-  const region = process.env.SUPABASE_DB_REGION || 'eu-central-1';
-  return `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-${region}.pooler.supabase.com:6543/postgres`;
+  const host = process.env.SUPABASE_DB_HOST || 'aws-1-ap-northeast-2.pooler.supabase.com';
+  const port = process.env.SUPABASE_DB_PORT || '6543';
+  return `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${host}:${port}/postgres`;
 }
 
 async function main() {

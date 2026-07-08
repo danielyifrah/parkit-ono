@@ -192,7 +192,7 @@ BEGIN
       owner_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
       'danny@example.com', crypt('demo1234', gen_salt('bf')), NOW(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"name":"דני כהן","role":"owner"}'::jsonb, NOW(), NOW(), NOW()
+      '{"name":"דני כהן","role":"owner"}'::jsonb, NOW(), NOW()
     );
     INSERT INTO auth.identities (
       id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
