@@ -416,6 +416,123 @@ export function updateParkingAvailability(parkingId, availabilityHours) {
   return parking;
 }
 
+export function updateParkingWeeklyAvailability(parkingId, weeklySlots) {
+  const parking = findParking(parkingId);
+  if (!parking) return null;
+
+  const bookedSlots = parking.availability?.bookedSlots || [];
+  const normalizedWeekly = {};
+
+  for (let day = 0; day < 7; day += 1) {
+    const rawSlots = Array.isArray(weeklySlots?.[day]) ? weeklySlots[day] : [];
+    const slots = rawSlots
+      .filter((slot) => slot?.start && slot?.end)
+      .map((slot) => ({
+        start: normalizeTime(slot.start),
+        end: normalizeTime(slot.end),
+      }));
+
+    normalizedWeekly[day] = slots.length === 0
+      ? null
+      : (slots.length === 1 ? slots[0] : slots);
+  }
+
+  parking.availability = {
+    ...monthAvailability(normalizedWeekly, [], bookedSlots),
+    dateOverrides: parking.availability?.dateOverrides || {},
+  };
+  parking.availabilityHours = 'זמינות משתנה לפי ימים';
+  persist();
+  return parking;
+}
+
+export function updateParkingUpcomingAvailability(parkingId, dayPlans) {
+  const parking = findParking(parkingId);
+  if (!parking) return null;
+
+  const bookedSlots = parking.availability?.bookedSlots || [];
+  const weekly = parking.availability?.weekly || weeklySchedule('08:00', '20:00');
+  const existingOverrides = { ...(parking.availability?.dateOverrides || {}) };
+  const today = toLocalDateStr(new Date());
+
+  Object.keys(existingOverrides).forEach((date) => {
+    if (date < today) delete existingOverrides[date];
+  });
+
+  (dayPlans || []).forEach((plan) => {
+    if (!plan?.date) return;
+    const slots = (plan.slots || [])
+      .filter((slot) => slot?.start && slot?.end)
+      .map((slot) => ({
+        start: normalizeTime(slot.start),
+        end: normalizeTime(slot.end),
+      }));
+
+    if (!plan.enabled || slots.length === 0) {
+      existingOverrides[plan.date] = null;
+      return;
+    }
+
+    existingOverrides[plan.date] = slots.length === 1 ? slots[0] : slots;
+  });
+
+  parking.availability = {
+    weekly,
+    blockedDates: [],
+    bookedSlots,
+    dateOverrides: existingOverrides,
+  };
+  parking.availabilityHours = 'זמינות לפי ימים קרובים';
+  persist();
+  return parking;
+}
+
+export function updateParkingDetails(parkingId, updates) {
+  const parking = findParking(parkingId);
+  if (!parking) return null;
+
+  const nextPrice = Number(updates?.pricePerHour);
+  parking.name = updates?.name?.trim() || parking.name;
+  parking.address = updates?.address?.trim() || parking.address;
+  parking.spotNumber = updates?.spotNumber?.trim() || parking.spotNumber;
+  parking.pricePerHour = Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice : parking.pricePerHour;
+  parking.notes = updates?.notes?.trim() || '';
+
+  if (typeof updates?.image === 'string') {
+    parking.image = updates.image.trim() || null;
+  }
+
+  persist();
+  return parking;
+}
+
+export function setParkingStatus(parkingId, status) {
+  const parking = findParking(parkingId);
+  if (!parking) return null;
+  if (!['active', 'inactive'].includes(status)) return null;
+
+  parking.status = status;
+  parking.available = status === 'active';
+  persist();
+  return parking;
+}
+
+export function removeParking(parkingId) {
+  const parking = findParking(parkingId);
+  if (!parking) return { ok: false };
+
+  const hasOpenSessions = state.bookings.some(
+    (booking) => booking.parkingId === parkingId && ['scheduled', 'saved', 'pending_arrival', 'active'].includes(booking.status),
+  );
+  if (hasOpenSessions) {
+    return { ok: false, error: 'לא ניתן להסיר חניה עם הזמנות פעילות.' };
+  }
+
+  state.parkings = state.parkings.filter((item) => item.id !== parkingId);
+  persist();
+  return { ok: true };
+}
+
 export function startBooking(bookingId, userId) {
   const booking = findBooking(bookingId);
   if (!booking || booking.userId !== userId || booking.status !== 'saved') {

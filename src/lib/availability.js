@@ -32,12 +32,32 @@ export function getDayName(dateStr) {
 }
 
 export function getScheduleForDate(parking, dateStr) {
-  if (!parking?.availability) return null;
-  const { weekly, blockedDates = [] } = parking.availability;
-  if (blockedDates.includes(dateStr)) return null;
-  const schedule = weekly[getDayOfWeek(dateStr)];
-  if (!schedule) return null;
-  return { start: normalizeTime(schedule.start), end: normalizeTime(schedule.end) };
+  const schedules = getSchedulesForDate(parking, dateStr);
+  return schedules[0] || null;
+}
+
+function normalizeScheduleSlots(daySchedule) {
+  if (!daySchedule) return [];
+  const schedules = Array.isArray(daySchedule) ? daySchedule : [daySchedule];
+  return schedules
+    .filter((slot) => slot?.start && slot?.end)
+    .map((slot) => ({
+      start: normalizeTime(slot.start),
+      end: normalizeTime(slot.end),
+    }))
+    .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+}
+
+export function getSchedulesForDate(parking, dateStr) {
+  if (!parking?.availability) return [];
+  const { weekly = {}, blockedDates = [], dateOverrides = {} } = parking.availability;
+  if (blockedDates.includes(dateStr)) return [];
+
+  if (Object.prototype.hasOwnProperty.call(dateOverrides, dateStr)) {
+    return normalizeScheduleSlots(dateOverrides[dateStr]);
+  }
+
+  return normalizeScheduleSlots(weekly[getDayOfWeek(dateStr)]);
 }
 
 export function getBookedSlotsForDate(parking, dateStr) {
@@ -62,18 +82,19 @@ export function getClosingMinutes(schedule) {
 }
 
 export function getMaxDurationMinutes(parking, dateStr, startTime, extraReservations = []) {
-  const schedule = getScheduleForDate(parking, dateStr);
-  if (!schedule) return 0;
+  const schedules = getSchedulesForDate(parking, dateStr);
+  if (schedules.length === 0) return 0;
 
   const startMin = timeToMinutes(startTime);
+  const schedule = schedules.find((slot) => {
+    const openMin = timeToMinutes(slot.start);
+    const closeMin = getClosingMinutes(slot);
+    return startMin >= openMin && startMin < closeMin;
+  });
+  if (!schedule) return 0;
+
   const closingMin = getClosingMinutes(schedule);
-
-  if (startMin < timeToMinutes(schedule.start) || startMin >= closingMin) {
-    return 0;
-  }
-
   let maxDuration = closingMin - startMin;
-
   for (const slot of slotsForValidation(parking, dateStr, extraReservations)) {
     const slotStart = timeToMinutes(slot.start);
     const slotEnd = timeToMinutes(slot.end);
@@ -90,10 +111,12 @@ export function getMaxDurationMinutes(parking, dateStr, startTime, extraReservat
 }
 
 export function getMaxExtensionMinutes(parking, dateStr, currentEndTime) {
-  const schedule = getScheduleForDate(parking, dateStr);
-  if (!schedule) return 0;
+  const schedules = getSchedulesForDate(parking, dateStr);
+  if (schedules.length === 0) return 0;
 
   const currentEnd = timeToMinutes(currentEndTime);
+  const schedule = schedules.find((slot) => currentEnd >= timeToMinutes(slot.start) && currentEnd < getClosingMinutes(slot));
+  if (!schedule) return 0;
   const closingMin = getClosingMinutes(schedule);
   let maxExtend = closingMin - currentEnd;
 
@@ -111,13 +134,17 @@ export function getMaxExtensionMinutes(parking, dateStr, currentEndTime) {
 }
 
 export function validateBookingSlot(parking, dateStr, startTime, durationMinutes, extraReservations = []) {
-  const schedule = getScheduleForDate(parking, dateStr);
-  if (!schedule) {
+  const schedules = getSchedulesForDate(parking, dateStr);
+  if (schedules.length === 0) {
     return { valid: false, error: 'החניה אינה זמינה בתאריך זה.' };
   }
 
   const startMin = timeToMinutes(startTime);
   const endMin = startMin + durationMinutes;
+  const schedule = schedules.find((slot) => startMin >= timeToMinutes(slot.start) && startMin < getClosingMinutes(slot));
+  if (!schedule) {
+    return { valid: false, error: 'החניה אינה פנויה בשעה שנבחרה.', maxDurationMinutes: 0 };
+  }
   const openMin = timeToMinutes(schedule.start);
   const closingMin = getClosingMinutes(schedule);
   const maxDuration = getMaxDurationMinutes(parking, dateStr, startTime, extraReservations);
