@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ParkingProvider } from './context/ParkingContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import BookingSessionGuard from './components/BookingSessionGuard';
@@ -22,11 +22,20 @@ import Support from './pages/Support';
 import OwnerDashboard from './pages/OwnerDashboard';
 import AddParking from './pages/AddParking';
 
-export default function App() {
+function AppRoutes() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="app-loading" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        טוען...
+      </div>
+    );
+  }
+
   return (
-    <AuthProvider>
-      <ParkingProvider>
-        <BrowserRouter>
+    <ParkingProvider>
+      <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route element={<BookingSessionGuard />}>
@@ -66,8 +75,15 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        </BrowserRouter>
-      </ParkingProvider>
+      </BrowserRouter>
+    </ParkingProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
     </AuthProvider>
   );
 }

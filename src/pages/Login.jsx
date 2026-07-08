@@ -21,12 +21,16 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = login(email, password);
+    setSubmitting(true);
+    setError('');
+    const result = await login(email, password);
+    setSubmitting(false);
     if (result.success) {
       navigate('/');
     } else {
@@ -34,8 +38,10 @@ export default function Login() {
     }
   };
 
-  const handleGoogle = () => {
-    loginWithGoogle();
+  const handleGoogle = async () => {
+    setSubmitting(true);
+    await loginWithGoogle();
+    setSubmitting(false);
     navigate('/');
   };
 
@@ -70,14 +76,14 @@ export default function Login() {
           <div className="auth-forgot">
             <Link to="/forgot-password">שכחת סיסמה?</Link>
           </div>
-          <Button type="submit" fullWidth size="lg">
-            התחברות
+          <Button type="submit" fullWidth size="lg" disabled={submitting}>
+            {submitting ? 'מתחבר...' : 'התחברות'}
           </Button>
         </form>
 
         <div className="auth-divider">או</div>
 
-        <Button variant="secondary" fullWidth onClick={handleGoogle}>
+        <Button variant="secondary" fullWidth onClick={handleGoogle} disabled={submitting}>
           <GoogleIcon />
           התחברות עם Google
         </Button>
@@ -87,7 +93,7 @@ export default function Login() {
         </p>
 
         <div className="auth-demo card">
-          <p className="auth-demo__title">חשבונות לדוגמה (כל סיסמה)</p>
+          <p className="auth-demo__title">חשבונות לדוגמה (סיסמה: demo1234)</p>
           <ul className="auth-demo__list">
             <li><strong>נהג:</strong> israel@example.com</li>
             <li><strong>בעל חניה:</strong> danny@example.com</li>

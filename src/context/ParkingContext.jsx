@@ -1,15 +1,32 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as parkingStore from '../lib/parkingStore';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 const ParkingContext = createContext(null);
 
 export function ParkingProvider({ children }) {
   const [version, setVersion] = useState(0);
+  const [ready, setReady] = useState(!isSupabaseConfigured());
+  const [error, setError] = useState(null);
 
   useEffect(() => parkingStore.subscribe(() => setVersion((v) => v + 1)), []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    parkingStore.init()
+      .then(() => setReady(true))
+      .catch((err) => {
+        console.error(err);
+        setError('שגיאה בטעינת נתונים מהשרת');
+        setReady(true);
+      });
+  }, []);
+
   const value = useMemo(() => ({
     version,
+    ready,
+    error,
     getParkings: parkingStore.getParkings,
     getParkingById: parkingStore.getParkingById,
     getAvailableParkings: parkingStore.getAvailableParkings,
@@ -46,7 +63,15 @@ export function ParkingProvider({ children }) {
     HOLD_MINUTES: parkingStore.HOLD_MINUTES,
     PRE_START_HOLD_MINUTES: parkingStore.PRE_START_HOLD_MINUTES,
     SAVED_HOLD_MINUTES: parkingStore.SAVED_HOLD_MINUTES,
-  }), [version]);
+  }), [version, ready, error]);
+
+  if (!ready) {
+    return (
+      <div className="app-loading" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        טוען נתונים...
+      </div>
+    );
+  }
 
   return (
     <ParkingContext.Provider value={value}>

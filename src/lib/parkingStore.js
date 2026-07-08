@@ -1,4 +1,6 @@
 import { parkings as seedParkings, bookings as seedBookings } from '../data/mockData';
+import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { bookingFromRow, bookingToRow, parkingFromRow, parkingToRow } from './supabaseMappers';
 import { calculateBookingPrice, toLocalDateStr } from './bookingPricing';
 import {
   addMinutesToTime,
@@ -38,11 +40,71 @@ function loadState() {
   return cloneSeed();
 }
 
-let state = loadState();
+let state = isSupabaseConfigured() ? { parkings: [], bookings: [] } : loadState();
+let initPromise = null;
+
+function notify() {
+  listeners.forEach((fn) => fn());
+}
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  listeners.forEach((fn) => fn());
+  if (!isSupabaseConfigured()) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+  notify();
+}
+
+async function syncParking(parking) {
+  if (!isSupabaseConfigured() || !parking) return;
+  const { error } = await supabase.from('parkings').upsert(parkingToRow(parking));
+  if (error) console.error('syncParking failed', error);
+}
+
+async function syncBooking(booking) {
+  if (!isSupabaseConfigured() || !booking) return;
+  const { error } = await supabase.from('bookings').upsert(bookingToRow(booking));
+  if (error) console.error('syncBooking failed', error);
+}
+
+async function deleteParkingFromDb(parkingId) {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase.from('parkings').delete().eq('id', parkingId);
+  if (error) console.error('deleteParking failed', error);
+}
+
+function persistBookingChange(booking) {
+  persist();
+  const parking = findParking(booking?.parkingId);
+  if (parking) syncParking(parking);
+  if (booking) syncBooking(booking);
+}
+
+function persistParkingChange(parking) {
+  persist();
+  if (parking) syncParking(parking);
+}
+
+export async function init() {
+  if (!isSupabaseConfigured()) return;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    const [{ data: parkings, error: parkingsError }, { data: bookings, error: bookingsError }] = await Promise.all([
+      supabase.from('parkings').select('*'),
+      supabase.from('bookings').select('*'),
+    ]);
+
+    if (parkingsError) throw parkingsError;
+    if (bookingsError) throw bookingsError;
+
+    state = {
+      parkings: (parkings || []).map(parkingFromRow),
+      bookings: (bookings || []).map(bookingFromRow),
+    };
+    notify();
+  })();
+
+  return initPromise;
 }
 
 export function subscribe(listener) {
@@ -281,7 +343,7 @@ export function createBooking({
   };
 
   state.bookings.push(booking);
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking, immediate };
 }
 
@@ -308,7 +370,7 @@ export function confirmArrivalHere(bookingId, userId) {
   booking.startTime = startTime;
   booking.endTime = endTime;
   blockSlotForBooking(booking);
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking };
 }
 
@@ -321,7 +383,7 @@ export function confirmArrivalOnWay(bookingId, userId) {
   booking.status = 'saved';
   booking.holdStartedAt = new Date().toISOString();
   blockSlotForBooking(booking);
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking };
 }
 
@@ -332,7 +394,7 @@ export function enterScheduledHold(bookingId) {
   booking.status = 'saved';
   booking.holdStartedAt = new Date().toISOString();
   blockSlotForBooking(booking);
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking };
 }
 
@@ -352,7 +414,7 @@ export function cancelBooking(bookingId, userId) {
   }
   booking.status = 'cancelled';
   booking.slotBlocked = false;
-  persist();
+  persistBookingChange(booking);
   return { ok: true };
 }
 
@@ -401,7 +463,7 @@ export function addParking(ownerId, form) {
     photosCount: 0,
   };
   state.parkings.push(parking);
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -412,7 +474,7 @@ export function updateParkingAvailability(parkingId, availabilityHours) {
   const bookedSlots = parking.availability?.bookedSlots || [];
   parking.availabilityHours = availabilityHours;
   parking.availability = monthAvailability(weeklySchedule(start, end), [], bookedSlots);
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -442,7 +504,7 @@ export function updateParkingWeeklyAvailability(parkingId, weeklySlots) {
     dateOverrides: parking.availability?.dateOverrides || {},
   };
   parking.availabilityHours = 'זמינות משתנה לפי ימים';
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -483,7 +545,7 @@ export function updateParkingUpcomingAvailability(parkingId, dayPlans) {
     dateOverrides: existingOverrides,
   };
   parking.availabilityHours = 'זמינות לפי ימים קרובים';
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -502,7 +564,7 @@ export function updateParkingDetails(parkingId, updates) {
     parking.image = updates.image.trim() || null;
   }
 
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -513,7 +575,7 @@ export function setParkingStatus(parkingId, status) {
 
   parking.status = status;
   parking.available = status === 'active';
-  persist();
+  persistParkingChange(parking);
   return parking;
 }
 
@@ -530,6 +592,7 @@ export function removeParking(parkingId) {
 
   state.parkings = state.parkings.filter((item) => item.id !== parkingId);
   persist();
+  deleteParkingFromDb(parkingId);
   return { ok: true };
 }
 
@@ -555,7 +618,7 @@ export function startBooking(bookingId, userId) {
   } else {
     blockSlotForBooking(booking);
   }
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking };
 }
 
@@ -587,7 +650,7 @@ export function extendActiveBooking(bookingId, userId, extraMinutes) {
     updateBookedSlotEnd(booking.parkingId, bookingId, booking.endTime);
   }
 
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking, maxExtensionMinutes: maxExtend };
 }
 
@@ -636,7 +699,7 @@ export function completeBooking(bookingId, userId, review = null) {
   if (review?.rating) {
     booking.review = review;
   }
-  persist();
+  persistBookingChange(booking);
   return { ok: true, booking };
 }
 

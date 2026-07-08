@@ -10,11 +10,20 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    register(name, email, password);
-    navigate('/');
+    setSubmitting(true);
+    setError('');
+    const result = await register(name, email, password);
+    setSubmitting(false);
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
@@ -25,6 +34,8 @@ export default function Register() {
           <span className="auth-logo-text">Parkit</span>
         </div>
         <h1 className="auth-title">הרשמה</h1>
+
+        {error && <div className="error-message">{error}</div>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <Input
@@ -50,8 +61,8 @@ export default function Register() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <Button type="submit" fullWidth size="lg">
-            הרשמה
+          <Button type="submit" fullWidth size="lg" disabled={submitting}>
+            {submitting ? 'נרשם...' : 'הרשמה'}
           </Button>
         </form>
 
