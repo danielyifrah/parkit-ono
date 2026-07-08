@@ -1,6 +1,7 @@
 import { Outlet, useLocation, matchPath } from 'react-router-dom';
 import { HeaderProvider } from '../../context/HeaderContext';
 import { GoogleMapsProvider } from '../../context/GoogleMapsContext';
+import { useAuth } from '../../context/AuthContext';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
@@ -19,11 +20,13 @@ const PAGE_TITLES = {
 
 function LayoutContent() {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const isAuthPage = AUTH_ROUTES.includes(location.pathname);
-  const hideHeader = HIDE_HEADER_ROUTES.includes(location.pathname);
-  const hideBottomNav = HIDE_BOTTOM_NAV_ROUTES.includes(location.pathname);
-  const showSearch = location.pathname === '/';
-  const isHome = location.pathname === '/';
+  const isLanding = location.pathname === '/' && !isAuthenticated;
+  const hideHeader = HIDE_HEADER_ROUTES.includes(location.pathname) || isLanding;
+  const hideBottomNav = HIDE_BOTTOM_NAV_ROUTES.includes(location.pathname) || isLanding;
+  const showSearch = location.pathname === '/' && isAuthenticated;
+  const isHome = location.pathname === '/' && isAuthenticated;
   const bookingMatch = matchPath('/parking/:id/book', location.pathname);
   const historyDetailMatch = matchPath('/history/:id', location.pathname);
   const title = historyDetailMatch
@@ -34,7 +37,7 @@ function LayoutContent() {
 
   const sessionLocked = ['/saved', '/active'].includes(location.pathname);
 
-  if (isAuthPage) {
+  if (isAuthPage || isLanding) {
     return <Outlet />;
   }
 
