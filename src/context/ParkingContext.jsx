@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuth } from './AuthContext';
 import * as parkingStore from '../lib/parkingStore';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 const ParkingContext = createContext(null);
 
 export function ParkingProvider({ children }) {
+  const { user } = useAuth();
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(!isSupabaseConfigured());
   const [error, setError] = useState(null);
@@ -12,16 +14,29 @@ export function ParkingProvider({ children }) {
   useEffect(() => parkingStore.subscribe(() => setVersion((v) => v + 1)), []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) return undefined;
 
-    parkingStore.init()
-      .then(() => setReady(true))
+    let active = true;
+    setReady(false);
+    setError(null);
+    parkingStore.invalidateInit();
+
+    parkingStore.init({ userId: user?.id || null, force: true })
+      .then(() => {
+        if (active) setReady(true);
+      })
       .catch((err) => {
         console.error(err);
-        setError('שגיאה בטעינת נתונים מהשרת');
-        setReady(true);
+        if (active) {
+          setError('שגיאה בטעינת נתונים מהשרת');
+          setReady(true);
+        }
       });
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const value = useMemo(() => ({
     version,

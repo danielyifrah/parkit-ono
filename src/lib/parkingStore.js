@@ -84,22 +84,33 @@ function persistParkingChange(parking) {
   if (parking) syncParking(parking);
 }
 
-export async function init() {
+export function invalidateInit() {
+  initPromise = null;
+}
+
+export async function init({ userId = null, force = false } = {}) {
   if (!isSupabaseConfigured()) return;
-  if (initPromise) return initPromise;
+  if (initPromise && !force) return initPromise;
 
   initPromise = (async () => {
-    const [{ data: parkings, error: parkingsError }, { data: bookings, error: bookingsError }] = await Promise.all([
-      supabase.from('parkings').select('*'),
-      supabase.from('bookings').select('*'),
-    ]);
+    const { data: parkings, error: parkingsError } = await supabase.from('parkings').select('*');
+    if (parkingsError) {
+      console.error('Failed to load parkings', parkingsError);
+    }
 
-    if (parkingsError) throw parkingsError;
-    if (bookingsError) throw bookingsError;
+    let bookings = [];
+    if (userId) {
+      const { data: bookingsData, error: bookingsError } = await supabase.from('bookings').select('*');
+      if (bookingsError) {
+        console.error('Failed to load bookings', bookingsError);
+      } else {
+        bookings = bookingsData || [];
+      }
+    }
 
     state = {
       parkings: (parkings || []).map(parkingFromRow),
-      bookings: (bookings || []).map(bookingFromRow),
+      bookings: bookings.map(bookingFromRow),
     };
     notify();
   })();
