@@ -168,10 +168,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'israel@example.com') THEN
     INSERT INTO auth.users (
       id, instance_id, aud, role, email, encrypted_password,
-      email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+      email_confirmed_at, confirmation_token, recovery_token, email_change, email_change_token_new,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
     ) VALUES (
       driver_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-      'israel@example.com', crypt('demo1234', gen_salt('bf')), NOW(),
+      'israel@example.com', crypt('demo1234', gen_salt('bf')), NOW(), '', '', '', '',
       '{"provider":"email","providers":["email"]}'::jsonb,
       '{"name":"ישראל ישראלי","role":"driver"}'::jsonb, NOW(), NOW()
     );
@@ -187,10 +188,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'danny@example.com') THEN
     INSERT INTO auth.users (
       id, instance_id, aud, role, email, encrypted_password,
-      email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+      email_confirmed_at, confirmation_token, recovery_token, email_change, email_change_token_new,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
     ) VALUES (
       owner_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-      'danny@example.com', crypt('demo1234', gen_salt('bf')), NOW(),
+      'danny@example.com', crypt('demo1234', gen_salt('bf')), NOW(), '', '', '', '',
       '{"provider":"email","providers":["email"]}'::jsonb,
       '{"name":"דני כהן","role":"owner"}'::jsonb, NOW(), NOW()
     );
@@ -206,10 +208,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@parkit.com') THEN
     INSERT INTO auth.users (
       id, instance_id, aud, role, email, encrypted_password,
-      email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+      email_confirmed_at, confirmation_token, recovery_token, email_change, email_change_token_new,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
     ) VALUES (
       admin_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-      'admin@parkit.com', crypt('demo1234', gen_salt('bf')), NOW(),
+      'admin@parkit.com', crypt('demo1234', gen_salt('bf')), NOW(), '', '', '', '',
       '{"provider":"email","providers":["email"]}'::jsonb,
       '{"name":"מיכל לוי","role":"admin"}'::jsonb, NOW(), NOW()
     );
