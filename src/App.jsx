@@ -10,7 +10,7 @@ import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
-import Home from './pages/Home';
+import HomeRoute from './pages/HomeRoute';
 import ParkingDetails from './pages/ParkingDetails';
 import Booking from './pages/Booking';
 import SavedParking from './pages/SavedParking';
@@ -36,7 +36,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/parking/:id" element={<ProtectedRoute><ParkingDetails /></ProtectedRoute>} />
             <Route path="/parking/:id/book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
             <Route path="/saved" element={<ProtectedRoute><SavedParking /></ProtectedRoute>} />

@@ -30,24 +30,26 @@ export default function Header({ showSearch = false, title, sessionLocked = fals
         {title ? (
           <h1 className="header__title">{title}</h1>
         ) : isHome ? (
-          <div className="header__search desktop-only">
-            <PlacesSearchInput
-              placeholder={search.placeholder || 'איפה תרצו לחנות?'}
-              icon={<Icon icon={Search} size={18} className="app-icon--muted" />}
-              iconEnd={search.onLocate ? (
-                <button
-                  type="button"
-                  className="header__locate"
-                  onClick={search.onLocate}
-                  aria-label="מרכוז למיקום שלי"
-                >
-                  <Icon icon={Crosshair} size={18} className="app-icon--muted" />
-                </button>
-              ) : null}
-              value={search.value}
-              onChange={search.onChange}
-              onPlaceSelect={search.onPlaceSelect}
-            />
+          <div className="header__search-zone desktop-only">
+            <div className="header__search">
+              <PlacesSearchInput
+                placeholder={search.placeholder || 'איפה תרצו לחנות?'}
+                icon={<Icon icon={Search} size={18} className="app-icon--muted" />}
+                value={search.value}
+                onChange={search.onChange}
+                onPlaceSelect={search.onPlaceSelect}
+              />
+            </div>
+            {search.onLocate && (
+              <button
+                type="button"
+                className="header__locate header__locate--adjacent"
+                onClick={search.onLocate}
+                aria-label="מרכוז למיקום שלי"
+              >
+                <Icon icon={Crosshair} size={18} className="app-icon--muted" />
+              </button>
+            )}
           </div>
         ) : (
           <div className="header__center" aria-hidden="true" />
