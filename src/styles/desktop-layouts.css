@@ -4,6 +4,24 @@
  * דסקטופ: ניצול רוחב מסך עד container-max
  */
 
+/* מובייל: תמיכה ו-page-split — עמודה אחת */
+.support-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-split,
+.page-split--equal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.booking-page__layout.page-split {
+  gap: 16px;
+}
+
 @media (min-width: 768px) {
   .page {
     padding: 28px 40px 40px;
@@ -37,13 +55,6 @@
     grid-template-columns: 1fr 1fr;
   }
 
-.support-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-@media (min-width: 768px) {
   .support-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -61,23 +72,4 @@
   .cards-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-}
-
-/* מובייל: תמיכה — עמודה אחת */
-.support-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* מובייל: page-split — עמודה אחת */
-.page-split,
-.page-split--equal {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.booking-page__layout.page-split {
-  gap: 16px;
 }
