@@ -32,7 +32,7 @@ export default function Booking() {
     getReservationConflicts,
     getPendingArrivalBookingByUserId,
     cancelBooking,
-    isParkingOccupied,
+    isParkingOccupiedByOther,
     HOLD_MINUTES,
   } = useParking();
   const parking = getParkingById(id);
@@ -104,13 +104,21 @@ export default function Booking() {
     );
   }
 
-  if (isParkingOccupied(parking.id)) {
+  const handleBackToMap = () => {
+    const pending = getPendingArrivalBookingByUserId(user?.id || '');
+    if (pending?.parkingId === parking.id) {
+      cancelBooking(pending.id, user.id);
+    }
+    navigate('/', { replace: true });
+  };
+
+  if (isParkingOccupiedByOther(parking.id, user?.id || '')) {
     return (
       <div className="page">
         <div className="empty-state card">
           <h2>החניה תפוסה כרגע</h2>
           <p>מישהו אחר הזמין את החניה. נסו חניה אחרת.</p>
-          <Button onClick={() => navigate('/')}>חזרה למפה</Button>
+          <Button onClick={handleBackToMap}>חזרה למפה</Button>
         </div>
       </div>
     );

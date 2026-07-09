@@ -270,6 +270,16 @@ export function isParkingOccupied(parkingId, excludeBookingId = null) {
   );
 }
 
+/** True when another user (or session) holds the spot — excludes caller's pending arrival on same parking. */
+export function isParkingOccupiedByOther(parkingId, userId) {
+  const ownPending = state.bookings.find(
+    (b) => b.userId === userId
+      && b.parkingId === parkingId
+      && b.status === 'pending_arrival',
+  );
+  return isParkingOccupied(parkingId, ownPending?.id ?? null);
+}
+
 export function getAvailableParkings() {
   return state.parkings.filter(
     (p) => p.available !== false && p.status === 'active' && !isParkingOccupied(p.id),
@@ -721,13 +731,7 @@ export function completeBooking(bookingId, userId, review = null) {
   }
 
   if (booking.slotBlocked) {
-    updateBookedSlotRange(
-      booking.parkingId,
-      bookingId,
-      booking.date,
-      booking.startTime,
-      actualEndTime,
-    );
+    removeBookedSlot(booking.parkingId, bookingId);
   }
 
   booking.slotBlocked = false;
