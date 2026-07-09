@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Clock, Image, ChevronRight, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
-import { getTodayTomorrowAvailability } from '../data/mockData';
+import { getTodayTomorrowAvailability } from '../lib/availability';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import './ParkingDetails.css';

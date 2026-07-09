@@ -62,7 +62,7 @@ export default function BookingHistoryDetails() {
     );
   }
 
-  const durationMinutes = Math.round(booking.durationHours * 60);
+  const durationMinutes = booking.durationMinutes ?? Math.round(booking.durationHours * 60);
   const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
   const hasReview = Boolean(savedReview?.rating);
 

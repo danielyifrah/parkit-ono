@@ -1,7 +1,7 @@
 import { parkings as seedParkings, bookings as seedBookings } from '../data/mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { bookingFromRow, bookingToRow, parkingFromRow, parkingToRow } from './supabaseMappers';
-import { calculateBookingPrice, toLocalDateStr } from './bookingPricing';
+import { calculateBookingPrice, getActualChargeMinutes, getElapsedMinutesFromStartedAt, toLocalDateStr } from './bookingPricing';
 import {
   addMinutesToTime,
   getBookingStartMs,
@@ -164,7 +164,7 @@ export function getReservationConflicts(parkingId, excludeBookingId = null) {
   return state.bookings
     .filter(
       (b) => b.parkingId === parkingId
-        && ['scheduled', 'saved', 'active'].includes(b.status)
+        && ['scheduled', 'saved', 'active', 'pending_arrival'].includes(b.status)
         && b.id !== excludeBookingId,
     )
     .map((b) => ({
@@ -261,7 +261,11 @@ export function getActiveBookingByUserId(userId) {
 export function isParkingOccupied(parkingId, excludeBookingId = null) {
   return state.bookings.some(
     (b) => b.parkingId === parkingId
-      && (b.status === 'active' || (b.status === 'saved' && b.slotBlocked))
+      && (
+        b.status === 'active'
+        || b.status === 'pending_arrival'
+        || (b.status === 'saved' && b.slotBlocked)
+      )
       && b.id !== excludeBookingId,
   );
 }
@@ -364,7 +368,7 @@ export function createBooking({
 
   state.bookings.push(booking);
 
-  if (booking.status === 'scheduled') {
+  if (booking.status === 'scheduled' || booking.status === 'pending_arrival') {
     addBookedSlot(
       booking.parkingId,
       booking.date,
@@ -701,10 +705,10 @@ export function completeBooking(bookingId, userId, review = null) {
   booking.endTime = actualEndTime;
   booking.completedAt = now.toISOString();
 
-  const durationMinutes = Math.max(
-    1,
-    timeToMinutes(actualEndTime) - timeToMinutes(booking.startTime),
-  );
+  const elapsedMinutes = booking.startedAt
+    ? getElapsedMinutesFromStartedAt(booking.startedAt, now)
+    : Math.max(1, timeToMinutes(actualEndTime) - timeToMinutes(booking.startTime));
+  const durationMinutes = getActualChargeMinutes(elapsedMinutes);
   booking.durationMinutes = durationMinutes;
   booking.durationHours = durationMinutes / 60;
 

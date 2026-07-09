@@ -409,59 +409,6 @@ export function getOwnerStats(ownerId) {
   };
 }
 
-export function getUpcomingAvailability(parking, fromDate = new Date(), days = 14) {
-  if (!parking?.availability) return [];
-
-  const { weekly, blockedDates = [] } = parking.availability;
-  const result = [];
-  const dayLabels = ['היום', 'מחר'];
-
-  for (let i = 0; i < days; i += 1) {
-    const date = new Date(fromDate);
-    date.setDate(date.getDate() + i);
-    const dateStr = toDateStr(date);
-    const dayOfWeek = date.getDay();
-    const schedule = weekly[dayOfWeek];
-    const relativeLabel = dayLabels[i] || null;
-
-    if (blockedDates.includes(dateStr)) {
-      result.push({
-        date: dateStr,
-        dayName: HEBREW_DAYS[dayOfWeek],
-        relativeLabel,
-        available: false,
-        label: 'חסום',
-      });
-      continue;
-    }
-
-    if (!schedule) {
-      result.push({
-        date: dateStr,
-        dayName: HEBREW_DAYS[dayOfWeek],
-        relativeLabel,
-        available: false,
-        label: 'סגור',
-      });
-      continue;
-    }
-
-    result.push({
-      date: dateStr,
-      dayName: HEBREW_DAYS[dayOfWeek],
-      relativeLabel,
-      available: true,
-      label: `${schedule.start} - ${schedule.end}`,
-    });
-  }
-
-  return result;
-}
-
-export function getTodayTomorrowAvailability(parking, fromDate = new Date()) {
-  return getUpcomingAvailability(parking, fromDate, 2);
-}
-
 export function getUserByEmail(email) {
   return users.find((u) => u.email === email);
 }

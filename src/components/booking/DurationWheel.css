@@ -139,3 +139,53 @@
   position: relative;
   z-index: 2;
 }
+
+@media (min-width: 768px) {
+  .duration-wheel__viewport {
+    height: auto;
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .duration-wheel__fade,
+  .duration-wheel__highlight,
+  .duration-wheel__spacer {
+    display: none;
+  }
+
+  .duration-wheel__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    height: auto;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .duration-wheel__item {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 120px;
+    height: auto;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: white;
+    cursor: pointer;
+    scroll-snap-align: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+
+  .duration-wheel__item:hover {
+    border-color: #D1D5DB;
+    background: var(--color-bg);
+  }
+
+  .duration-wheel__item--selected {
+    border-color: var(--color-primary);
+    background: #EFF6FF;
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+}

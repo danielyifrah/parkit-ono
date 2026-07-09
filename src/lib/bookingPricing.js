@@ -1,5 +1,6 @@
 export const FULL_DAY_HOURS = 12;
 export const FULL_DAY_MINUTES = FULL_DAY_HOURS * 60;
+export const MINIMUM_CHARGE_MINUTES = 15;
 const MAX_REGULAR_MINUTES = 8 * 60;
 
 export function toLocalDateStr(date) {
@@ -71,6 +72,24 @@ export function generateDurationOptions() {
   });
 
   return options;
+}
+
+export function getElapsedMinutesFromStartedAt(startedAt, endDate = new Date()) {
+  if (!startedAt) return 0;
+  const elapsedMs = endDate.getTime() - new Date(startedAt).getTime();
+  return Math.max(0, Math.ceil(elapsedMs / 60000));
+}
+
+/** Billable minutes: at least MINIMUM_CHARGE_MINUTES once parking has started. */
+export function getActualChargeMinutes(elapsedMinutes) {
+  if (elapsedMinutes <= 0) return 0;
+  return Math.max(MINIMUM_CHARGE_MINUTES, elapsedMinutes);
+}
+
+export function calculateActualPrice(pricePerHour, elapsedMinutes) {
+  const chargeMinutes = getActualChargeMinutes(elapsedMinutes);
+  if (chargeMinutes <= 0) return { chargeMinutes: 0, ...calculateBookingPrice(pricePerHour, 0) };
+  return { chargeMinutes, ...calculateBookingPrice(pricePerHour, chargeMinutes) };
 }
 
 export function calculateBookingPrice(pricePerHour, minutes) {

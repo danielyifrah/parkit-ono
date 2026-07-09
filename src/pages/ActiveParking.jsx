@@ -15,7 +15,11 @@ import {
   formatTimerParts,
   getMaxExtensionMinutes,
 } from '../lib/availability';
-import { formatDurationLabel } from '../lib/bookingPricing';
+import {
+  formatDurationLabel,
+  calculateActualPrice,
+  MINIMUM_CHARGE_MINUTES,
+} from '../lib/bookingPricing';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import Modal from '../components/ui/Modal';
@@ -24,10 +28,13 @@ import { Textarea } from '../components/ui/Input';
 import DurationWheel from '../components/booking/DurationWheel';
 import './ActiveParking.css';
 
-function calculateElapsedPrice(parking, startedAt) {
-  if (!startedAt) return 0;
-  const elapsedHours = (Date.now() - new Date(startedAt).getTime()) / 3600000;
-  return Math.round(parking.pricePerHour * elapsedHours);
+function getLivePricing(parking, startedAt) {
+  if (!parking || !startedAt) return null;
+  const elapsedMinutes = Math.max(
+    0,
+    Math.ceil((Date.now() - new Date(startedAt).getTime()) / 60000),
+  );
+  return calculateActualPrice(parking.pricePerHour, elapsedMinutes);
 }
 
 export default function ActiveParking() {
@@ -48,10 +55,12 @@ export default function ActiveParking() {
     activeBooking ? getActiveRemainingMs(activeBooking) : 0,
   );
   const [livePrice, setLivePrice] = useState(0);
+  const [liveChargeMinutes, setLiveChargeMinutes] = useState(0);
   const [showExtend, setShowExtend] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(30);
   const [extendError, setExtendError] = useState('');
   const [showSummary, setShowSummary] = useState(false);
+  const [summaryPricing, setSummaryPricing] = useState(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [finishError, setFinishError] = useState('');
@@ -64,8 +73,10 @@ export default function ActiveParking() {
     : 0;
 
   const handleSessionEnd = useCallback(() => {
+    const pricing = getLivePricing(parking, activeBooking?.startedAt);
+    setSummaryPricing(pricing);
     setShowSummary(true);
-  }, []);
+  }, [parking, activeBooking?.startedAt]);
 
   useEffect(() => {
     if (!activeBooking || showSummary) return undefined;
@@ -73,7 +84,9 @@ export default function ActiveParking() {
     const tick = () => {
       const remaining = getActiveRemainingMs(activeBooking);
       setRemainingMs(remaining);
-      setLivePrice(calculateElapsedPrice(parking, activeBooking.startedAt));
+      const pricing = getLivePricing(parking, activeBooking.startedAt);
+      setLivePrice(pricing?.total ?? 0);
+      setLiveChargeMinutes(pricing?.chargeMinutes ?? 0);
       if (remaining <= 0) handleSessionEnd();
     };
 
@@ -157,7 +170,12 @@ export default function ActiveParking() {
 
             <p className="active-parking__price-label">חיוב משוער עד כה</p>
             <p className="active-parking__price">₪{livePrice}</p>
-            <span className="active-parking__rate">₪{parking.pricePerHour} לשעה</span>
+            <span className="active-parking__rate">
+              ₪{parking.pricePerHour} לשעה
+              {liveChargeMinutes > 0 && liveChargeMinutes < MINIMUM_CHARGE_MINUTES + 1 && (
+                <> · מינימום {MINIMUM_CHARGE_MINUTES} דקות</>
+              )}
+            </span>
           </div>
 
           {!showSummary && (
@@ -222,7 +240,7 @@ export default function ActiveParking() {
               <Icon icon={Timer} size={18} className="app-icon--primary" />
             </div>
             <div className="active-parking__row-flex">
-              <span>סה״כ משוער</span>
+              <span>תקרת הזמנה</span>
               <span className="active-parking__pill">₪{activeBooking.totalPrice}</span>
             </div>
           </div>
@@ -263,10 +281,18 @@ export default function ActiveParking() {
       >
         <div className="active-parking__summary">
           <p className="active-parking__summary-total">
-            סה״כ לתשלום: <strong>₪{activeBooking.totalPrice}</strong>
+            סה״כ לתשלום: <strong>₪{summaryPricing?.total ?? livePrice}</strong>
           </p>
-          {activeBooking.discountLabel && (
-            <p className="active-parking__summary-discount">{activeBooking.discountLabel}</p>
+          {summaryPricing?.chargeMinutes != null && (
+            <p className="active-parking__summary-duration">
+              זמן חיוב: {formatDurationLabel(summaryPricing.chargeMinutes)}
+              {summaryPricing.chargeMinutes === MINIMUM_CHARGE_MINUTES && (
+                <> (מינימום {MINIMUM_CHARGE_MINUTES} דקות)</>
+              )}
+            </p>
+          )}
+          {summaryPricing?.discountLabel && (
+            <p className="active-parking__summary-discount">{summaryPricing.discountLabel}</p>
           )}
           <p className="active-parking__summary-payment">
             שולם ב-{activeBooking.paymentMethod}

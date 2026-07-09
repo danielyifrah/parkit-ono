@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
-import { generateDurationOptions } from '../../lib/bookingPricing';
+import { generateDurationOptions, MINIMUM_CHARGE_MINUTES } from '../../lib/bookingPricing';
 import Icon from '../ui/Icon';
 import './DurationWheel.css';
 
@@ -8,7 +8,7 @@ const ITEM_HEIGHT = 44;
 const options = generateDurationOptions();
 
 const DURATION_INFO =
-  'הזמן והמחיר יחושבו אוטומטית בסיום החניה. הזמן המוערך נועד לבדוק את זמינות החניה.';
+  `הזמן והמחיר יחושבו לפי זמן החניה בפועל בסיום. המשך שנבחר כאן נועד לבדוק זמינות בלבד. מינימום חיוב: ${MINIMUM_CHARGE_MINUTES} דקות.`;
 
 export default function DurationWheel({ value, onChange, maxMinutes }) {
   const listRef = useRef(null);
@@ -106,6 +106,7 @@ export default function DurationWheel({ value, onChange, maxMinutes }) {
               className={`duration-wheel__item ${opt.minutes === value ? 'duration-wheel__item--selected' : ''}`}
               role="option"
               aria-selected={opt.minutes === value}
+              onClick={() => onChange(opt.minutes)}
             >
               <span>{opt.label}</span>
               {opt.isFullDay && (

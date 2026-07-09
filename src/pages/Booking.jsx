@@ -6,11 +6,12 @@ import { useParking } from '../context/ParkingContext';
 import {
   validateBookingSlot,
   getMaxDurationMinutes,
+  getAvailableUntilTime,
   getCurrentTimeStr,
   getScheduleForDate,
   isStartTimeNow,
 } from '../lib/availability';
-import { calculateBookingPrice, toLocalDateStr, formatDurationLabel } from '../lib/bookingPricing';
+import { calculateBookingPrice, toLocalDateStr, formatDurationLabel, MINIMUM_CHARGE_MINUTES } from '../lib/bookingPricing';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Icon from '../components/ui/Icon';
@@ -56,6 +57,11 @@ export default function Booking() {
     return getMaxDurationMinutes(parking, date, startTime, reservations);
   }, [parking, date, startTime, reservations]);
 
+  const availableUntil = useMemo(() => {
+    if (!parking || maxDurationMinutes == null || maxDurationMinutes <= 0) return null;
+    return getAvailableUntilTime(parking, date, startTime, reservations);
+  }, [parking, date, startTime, maxDurationMinutes, reservations]);
+
   const handleDateChange = useCallback((newDate) => {
     setDate(newDate);
     if (newDate === toLocalDateStr(new Date())) {
@@ -80,7 +86,7 @@ export default function Booking() {
     } else {
       setAvailabilityHint('');
     }
-  }, [parking, date, startTime, reservations]);
+  }, [parking, date, startTime, durationMinutes, maxDurationMinutes, reservations]);
 
   useEffect(() => {
     const pending = getPendingArrivalBookingByUserId(user?.id || '');
@@ -201,9 +207,16 @@ export default function Booking() {
             זמינות: {parking.availabilityHours}
           </p>
           {maxDurationMinutes != null && maxDurationMinutes > 0 && (
-            <p className="booking-page__max-duration">
-              מקסימום להזמנה: {formatDurationLabel(maxDurationMinutes)}
-            </p>
+            <>
+              <p className="booking-page__max-duration">
+                מקסימום להזמנה: {formatDurationLabel(maxDurationMinutes)}
+              </p>
+              {availableUntil && (
+                <p className="booking-page__available-until">
+                  פנוי עד {availableUntil}
+                </p>
+              )}
+            </>
           )}
           <div className="booking-page__summary-note">
             <p>
@@ -230,10 +243,13 @@ export default function Booking() {
 
           <div className="booking-page__total">
             <div className="booking-page__total-info">
-              <span>סה״כ לתשלום</span>
+              <span>תקרת תשלום משוערת</span>
               {pricing.discountLabel && (
                 <span className="booking-page__discount">{pricing.discountLabel}</span>
               )}
+              <span className="booking-page__billing-note">
+                החיוב הסופי לפי זמן בפועל · מינימום {MINIMUM_CHARGE_MINUTES} דקות
+              </span>
             </div>
             <div className="booking-page__total-prices">
               {pricing.discountPercent > 0 && (

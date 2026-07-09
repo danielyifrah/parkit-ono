@@ -257,6 +257,55 @@ function slotsForValidation(parking, dateStr, extraReservations = []) {
   return [...booked, ...extra];
 }
 
+import { toLocalDateStr } from './bookingPricing';
+
+export function getUpcomingAvailability(parking, fromDate = new Date(), days = 14) {
+  if (!parking?.availability) return [];
+
+  const result = [];
+  const dayLabels = ['היום', 'מחר'];
+
+  for (let i = 0; i < days; i += 1) {
+    const date = new Date(fromDate);
+    date.setDate(date.getDate() + i);
+    const dateStr = toLocalDateStr(date);
+    const schedules = getSchedulesForDate(parking, dateStr);
+    const relativeLabel = dayLabels[i] || null;
+
+    if (schedules.length === 0) {
+      result.push({
+        date: dateStr,
+        dayName: getDayName(dateStr),
+        relativeLabel,
+        available: false,
+        label: 'סגור',
+      });
+      continue;
+    }
+
+    result.push({
+      date: dateStr,
+      dayName: getDayName(dateStr),
+      relativeLabel,
+      available: true,
+      label: schedules.map((slot) => `${slot.start} - ${slot.end}`).join(' · '),
+    });
+  }
+
+  return result;
+}
+
+export function getTodayTomorrowAvailability(parking, fromDate = new Date()) {
+  return getUpcomingAvailability(parking, fromDate, 2);
+}
+
+/** Latest end time for a booking starting at startTime on dateStr (schedule + conflicts). */
+export function getAvailableUntilTime(parking, dateStr, startTime, extraReservations = []) {
+  const maxMinutes = getMaxDurationMinutes(parking, dateStr, startTime, extraReservations);
+  if (maxMinutes <= 0) return null;
+  return addMinutesToTime(startTime, maxMinutes);
+}
+
 export function formatTimerParts(totalSeconds) {
   const s = Math.max(0, totalSeconds);
   return {

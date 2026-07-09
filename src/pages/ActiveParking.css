@@ -19,6 +19,12 @@
   margin-bottom: 8px;
 }
 
+.active-parking__summary-duration {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
 .active-parking__summary-discount {
   color: var(--color-success);
   font-size: 0.875rem;
