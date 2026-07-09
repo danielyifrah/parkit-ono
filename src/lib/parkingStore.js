@@ -93,19 +93,28 @@ export async function init({ userId = null, force = false } = {}) {
   if (initPromise && !force) return initPromise;
 
   initPromise = (async () => {
-    const { data: parkings, error: parkingsError } = await supabase.from('parkings').select('*');
+    const { data: parkings, error: parkingsError } = await supabase
+      .from('parkings')
+      .select('*');
+
     if (parkingsError) {
       console.error('Failed to load parkings', parkingsError);
+      throw parkingsError;
     }
 
     let bookings = [];
     if (userId) {
-      const { data: bookingsData, error: bookingsError } = await supabase.from('bookings').select('*');
+      // RLS returns only the user's bookings + bookings on parkings they own
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*');
+
       if (bookingsError) {
         console.error('Failed to load bookings', bookingsError);
-      } else {
-        bookings = bookingsData || [];
+        throw bookingsError;
       }
+
+      bookings = bookingsData || [];
     }
 
     state = {
@@ -354,6 +363,18 @@ export function createBooking({
   };
 
   state.bookings.push(booking);
+
+  if (booking.status === 'scheduled') {
+    addBookedSlot(
+      booking.parkingId,
+      booking.date,
+      booking.startTime,
+      booking.endTime,
+      booking.id,
+    );
+    booking.slotBlocked = true;
+  }
+
   persistBookingChange(booking);
   return { ok: true, booking, immediate };
 }
@@ -366,7 +387,7 @@ export function createSavedBooking(params) {
 export function confirmArrivalHere(bookingId, userId) {
   const booking = findBooking(bookingId);
   if (!booking || booking.userId !== userId || booking.status !== 'pending_arrival') {
-    return { ok: false };
+    return { ok: false, error: 'לא ניתן להתחיל חניה. ההזמנה אינה תקפה.' };
   }
 
   const now = new Date();
@@ -388,7 +409,7 @@ export function confirmArrivalHere(bookingId, userId) {
 export function confirmArrivalOnWay(bookingId, userId) {
   const booking = findBooking(bookingId);
   if (!booking || booking.userId !== userId || booking.status !== 'pending_arrival') {
-    return { ok: false };
+    return { ok: false, error: 'לא ניתן לשמור חניה. ההזמנה אינה תקפה.' };
   }
 
   booking.status = 'saved';
@@ -668,7 +689,7 @@ export function extendActiveBooking(bookingId, userId, extraMinutes) {
 export function completeBooking(bookingId, userId, review = null) {
   const booking = findBooking(bookingId);
   if (!booking || booking.userId !== userId || booking.status !== 'active') {
-    return { ok: false };
+    return { ok: false, error: 'לא ניתן לסיים את החניה. נסו שוב.' };
   }
 
   const now = new Date();

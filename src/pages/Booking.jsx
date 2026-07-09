@@ -44,6 +44,7 @@ export default function Booking() {
   const [loading, setLoading] = useState(false);
   const [arrivalModalOpen, setArrivalModalOpen] = useState(false);
   const [pendingBookingId, setPendingBookingId] = useState(null);
+  const [arrivalError, setArrivalError] = useState('');
 
   const reservations = useMemo(
     () => (parking ? getReservationConflicts(parking.id) : []),
@@ -152,14 +153,24 @@ export default function Booking() {
 
   const handleArrivalHere = () => {
     if (!pendingBookingId) return;
+    setArrivalError('');
     const result = confirmArrivalHere(pendingBookingId, user.id);
-    if (result.ok) navigate('/active', { replace: true });
+    if (result.ok) {
+      navigate('/active', { replace: true });
+    } else {
+      setArrivalError(result.error || 'לא ניתן להתחיל חניה');
+    }
   };
 
   const handleArrivalOnWay = () => {
     if (!pendingBookingId) return;
+    setArrivalError('');
     const result = confirmArrivalOnWay(pendingBookingId, user.id);
-    if (result.ok) navigate('/saved', { replace: true });
+    if (result.ok) {
+      navigate('/saved', { replace: true });
+    } else {
+      setArrivalError(result.error || 'לא ניתן לשמור חניה');
+    }
   };
 
   return (
@@ -250,6 +261,7 @@ export default function Booking() {
         closable={false}
       >
         <p className="booking-page__arrival-prompt">איך תרצו להמשיך?</p>
+        {arrivalError && <div className="error-message">{arrivalError}</div>}
         <div className="booking-page__arrival-actions">
           <Button fullWidth size="lg" onClick={handleArrivalHere}>
             אני פה, התחל חניה

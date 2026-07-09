@@ -64,6 +64,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 3. העתק את **כל** התוכן → הדבק ב-SQL Editor → **Run**
 4. חזור על אותו דבר לקובץ השני:
    `supabase/migrations/20260708200000_public_parkings_rls.sql` → **Run**
+5. חזור על אותו דבר לקובץ השלישי:
+   `supabase/migrations/20260709120000_tighten_rls.sql` → **Run**
 
 ### דרך ב — מהטרמינל (`npm run db:setup`)
 
@@ -113,7 +115,8 @@ npm run dev
 | קובץ | מה הוא עושה |
 |------|-------------|
 | `20260708180000_initial_schema.sql` | יוצר טבלאות, אינדקסים, RLS בסיסי, trigger לפרופיל, seed data |
-| `20260708200000_public_parkings_rls.sql` | מעדכן הרשאות קריאה לחניות (ציבורי) ולהזמנות (לדמו) |
+| `20260708200000_public_parkings_rls.sql` | מאפשר קריאה ציבורית לחניות (למפה) |
+| `20260709120000_tighten_rls.sql` | מחמיר RLS: פרופיל עצמי, הזמנות מוגבלות, חניות active לציבור |
 
 ---
 

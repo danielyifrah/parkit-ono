@@ -305,8 +305,14 @@ export default function OwnerDashboard() {
     if (!settingsParking) return;
     const shouldDelete = window.confirm(`להסיר את "${settingsParking.name}"? לא ניתן לבטל פעולה זו.`);
     if (!shouldDelete) return;
-    removeParking(settingsParking.id);
-    setSettingsParking(null);
+
+    const result = removeParking(settingsParking.id);
+    if (result.ok) {
+      setSettingsParking(null);
+      setSettingsError('');
+    } else {
+      setSettingsError(result.error || 'לא ניתן להסיר את החניה');
+    }
   };
 
   return (

@@ -254,6 +254,7 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 Supabase → **SQL Editor** → העתק והרץ לפי סדר:
 1. `supabase/migrations/20260708180000_initial_schema.sql`
 2. `supabase/migrations/20260708200000_public_parkings_rls.sql`
+3. `supabase/migrations/20260709120000_tighten_rls.sql`
 
 **דרך ב — טרמינל:**
 
@@ -287,7 +288,6 @@ npm run db:setup
 ## תכנון עתידי
 
 - Supabase Storage לתמונות חניה
-- חיזוק RLS (הגבלת קריאת פרופילים והזמנות)
 - `CHECK` על `bookings.status`
 
 ---

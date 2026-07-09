@@ -14,6 +14,7 @@ export default function BookingSessionGuard() {
   const {
     getSavedBookingByUserId,
     getActiveBookingByUserId,
+    getPendingArrivalBookingByUserId,
     checkScheduledHoldsForUser,
     version,
   } = useParking();
@@ -30,6 +31,7 @@ export default function BookingSessionGuard() {
 
   const activeBooking = getActiveBookingByUserId(userId);
   const savedBooking = getSavedBookingByUserId(userId);
+  const pendingArrival = getPendingArrivalBookingByUserId(userId);
 
   if (activeBooking && location.pathname !== LOCKED_PATHS.active) {
     return <Navigate to={LOCKED_PATHS.active} replace />;
@@ -37,6 +39,13 @@ export default function BookingSessionGuard() {
 
   if (!activeBooking && savedBooking && location.pathname !== LOCKED_PATHS.saved) {
     return <Navigate to={LOCKED_PATHS.saved} replace />;
+  }
+
+  if (!activeBooking && !savedBooking && pendingArrival) {
+    const bookPath = `/parking/${pendingArrival.parkingId}/book`;
+    if (location.pathname !== bookPath) {
+      return <Navigate to={bookPath} replace />;
+    }
   }
 
   return <Outlet />;

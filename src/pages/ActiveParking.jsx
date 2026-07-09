@@ -54,6 +54,7 @@ export default function ActiveParking() {
   const [showSummary, setShowSummary] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [finishError, setFinishError] = useState('');
 
   useScreenLock(Boolean(activeBooking) && !showSummary);
   useWakeLock(Boolean(activeBooking) && !showSummary);
@@ -96,10 +97,13 @@ export default function ActiveParking() {
   };
 
   const handleFinish = (withReview = false) => {
+    setFinishError('');
     const review = withReview && rating > 0 ? { rating, text: reviewText.trim() } : null;
     const result = completeBooking(activeBooking.id, user.id, review);
     if (result.ok) {
       navigate(`/history/${activeBooking.id}`, { replace: true });
+    } else {
+      setFinishError(result.error || 'לא ניתן לסיים את החניה');
     }
   };
 
@@ -281,6 +285,7 @@ export default function ActiveParking() {
           />
 
           <div className="active-parking__summary-actions">
+            {finishError && <div className="error-message">{finishError}</div>}
             <Button fullWidth onClick={() => handleFinish(true)} disabled={rating === 0}>
               שליחה וסיום
             </Button>

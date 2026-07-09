@@ -41,16 +41,21 @@ export default function AddParking() {
     }
 
     setSubmitting(true);
-    addParking(user.id, {
-      ...form,
-      name: form.name.trim(),
-      address: form.address.trim(),
-      spotNumber: form.spotNumber.trim(),
-      description: form.description.trim(),
-      availabilityHours: form.availabilityHours.trim(),
-    });
-    setSuccess(true);
-    setTimeout(() => navigate('/partner'), 2000);
+
+    try {
+      addParking(user.id, {
+        ...form,
+        name: form.name.trim(),
+        address: form.address.trim(),
+        spotNumber: form.spotNumber.trim(),
+        description: form.description.trim(),
+        availabilityHours: form.availabilityHours.trim(),
+      });
+      setSuccess(true);
+      setTimeout(() => navigate('/partner'), 2000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

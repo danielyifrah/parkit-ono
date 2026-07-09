@@ -151,11 +151,13 @@ erDiagram
 
 | טבלה | מדיניות עיקרית |
 |------|----------------|
-| `profiles` | SELECT לכל authenticated; UPDATE לפרופיל עצמי |
-| `parkings` | SELECT ציבורי; INSERT/UPDATE/DELETE לבעלים בלבד |
-| `bookings` | INSERT/UPDATE/DELETE להזמנה עצמית; SELECT לפי מדיניות המיגרציה |
+| `profiles` | SELECT/UPDATE לפרופיל עצמי בלבד |
+| `parkings` | SELECT ציבורי לחניות `active`; בעלים רואה גם מוקפאות |
+| `bookings` | SELECT להזמנות עצמיות + הזמנות על חניות של הבעלים |
+| `bookings` | INSERT/UPDATE/DELETE להזמנה עצמית בלבד |
+| `parkings` | INSERT/UPDATE/DELETE לבעלים בלבד |
 
-פרטים מלאים: `supabase/migrations/20260708180000_initial_schema.sql` ו־`20260708200000_public_parkings_rls.sql`.
+פרטים מלאים: `supabase/migrations/` (3 קבצים, לפי סדר תאריך).
 
 ---
 
