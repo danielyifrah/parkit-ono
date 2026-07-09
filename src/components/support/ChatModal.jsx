@@ -92,7 +92,7 @@ export default function ChatModal({ isOpen, onClose }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
-          <Button type="submit" size="sm" disabled={!input.trim()}>
+          <Button type="submit" size="sm" disabled={!input.trim() || typing}>
             <Icon icon={Send} size={16} />
           </Button>
         </form>

@@ -6,6 +6,17 @@
   flex-shrink: 0;
 }
 
+.home-locate-error {
+  margin: 12px 16px 0;
+  flex-shrink: 0;
+}
+
+.home-locate-error__text {
+  flex: 1;
+  margin: 0;
+  line-height: 1.5;
+}
+
 .home-scheduled-banner__text {
   flex: 1;
   display: flex;

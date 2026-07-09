@@ -197,6 +197,12 @@
   border: 1px solid var(--color-border);
 }
 
+.owner-dashboard__upload-status {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
 .owner-dashboard__availability-intro {
   margin: 0 0 14px;
   font-size: 0.875rem;

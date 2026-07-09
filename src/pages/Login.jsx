@@ -40,9 +40,14 @@ export default function Login() {
 
   const handleGoogle = async () => {
     setSubmitting(true);
-    await loginWithGoogle();
+    setError('');
+    const result = await loginWithGoogle();
     setSubmitting(false);
-    navigate('/');
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error || 'ההתחברות נכשלה');
+    }
   };
 
   return (
@@ -85,7 +90,7 @@ export default function Login() {
 
         <Button variant="secondary" fullWidth onClick={handleGoogle} disabled={submitting}>
           <GoogleIcon />
-          התחברות עם Google
+          {submitting ? 'מתחבר...' : 'התחברות עם Google'}
         </Button>
 
         <p className="auth-switch">

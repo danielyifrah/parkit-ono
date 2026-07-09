@@ -15,9 +15,20 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
-    const result = await register(name, email, password);
+
+    if (!name.trim()) {
+      setError('יש להזין שם מלא');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await register(name.trim(), email.trim(), password);
     setSubmitting(false);
     if (result.success) {
       navigate('/');
@@ -59,6 +70,7 @@ export default function Register() {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
             required
           />
           <Button type="submit" fullWidth size="lg" disabled={submitting}>

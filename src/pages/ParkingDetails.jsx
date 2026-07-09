@@ -24,6 +24,8 @@ export default function ParkingDetails() {
   const { getParkingById, isParkingOccupied } = useParking();
   const parking = getParkingById(id);
   const todayTomorrowAvailability = parking ? getTodayTomorrowAvailability(parking) : [];
+  const occupied = isParkingOccupied(id);
+  const unavailable = !parking?.available || parking?.status !== 'active';
 
   if (!parking) {
     return (
@@ -56,10 +58,22 @@ export default function ParkingDetails() {
           <div className="parking-details__content">
             <div className="parking-details__header">
               <div>
-                <span className="badge badge--success">
-                  <span className="badge__dot" />
-                  פנוי עכשיו
-                </span>
+                {unavailable ? (
+                  <span className="badge badge--inactive">
+                    <span className="badge__dot" />
+                    לא זמין
+                  </span>
+                ) : occupied ? (
+                  <span className="badge badge--error">
+                    <span className="badge__dot" />
+                    תפוס כרגע
+                  </span>
+                ) : (
+                  <span className="badge badge--success">
+                    <span className="badge__dot" />
+                    פנוי עכשיו
+                  </span>
+                )}
                 <h1 className="parking-details__title">{parking.name}</h1>
                 <p className="parking-details__address">
                   <Icon icon={MapPin} size={14} className="app-icon--muted" />
@@ -136,9 +150,13 @@ export default function ParkingDetails() {
               fullWidth
               size="lg"
               onClick={() => navigate(`/parking/${id}/book`)}
-              disabled={isParkingOccupied(id)}
+              disabled={occupied || unavailable}
             >
-              {isParkingOccupied(id) ? 'החניה תפוסה כרגע' : 'הזמן חניה'}
+              {unavailable
+                ? 'החניה לא זמינה כרגע'
+                : occupied
+                  ? 'החניה תפוסה כרגע'
+                  : 'הזמן חניה'}
             </Button>
           </div>
         </div>

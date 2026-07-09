@@ -1,0 +1,41 @@
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "id"
+    PROFILES ||--o{ PARKINGS : "owner_id"
+    PROFILES ||--o{ BOOKINGS : "user_id"
+    PARKINGS ||--o{ BOOKINGS : "parking_id"
+
+    AUTH_USERS {
+        uuid id PK
+        text email
+    }
+
+    PROFILES {
+        uuid id PK_FK
+        text email UK
+        text name
+        text phone
+        text role
+        text avatar
+    }
+
+    PARKINGS {
+        text id PK
+        uuid owner_id FK
+        text name
+        text address
+        numeric price_per_hour
+        jsonb availability
+        float lat
+        float lng
+        text status
+    }
+
+    BOOKINGS {
+        text id PK
+        uuid user_id FK
+        text parking_id FK
+        date date
+        text status
+        numeric total_price
+        jsonb review
+    }

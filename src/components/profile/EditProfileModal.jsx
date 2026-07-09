@@ -62,21 +62,22 @@ export default function EditProfileModal({ isOpen, onClose }) {
     }
 
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
 
-    const result = updateProfile({
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      avatar,
-    });
+    try {
+      const result = await updateProfile({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        avatar,
+      });
 
-    setSaving(false);
-
-    if (result.success) {
-      onClose();
-    } else {
-      setError(result.error || 'שגיאה בשמירה');
+      if (result.success) {
+        onClose();
+      } else {
+        setError(result.error || 'שגיאה בשמירה');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 

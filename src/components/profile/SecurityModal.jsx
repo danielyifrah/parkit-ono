@@ -40,18 +40,20 @@ export default function SecurityModal({ isOpen, onClose }) {
     }
 
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
 
-    const result = changePassword(currentPassword, newPassword);
-    setSaving(false);
+    try {
+      const result = await changePassword(currentPassword, newPassword);
 
-    if (result.success) {
-      setSuccess('הסיסמה עודכנה בהצלחה');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } else {
-      setError(result.error || 'שגיאה בעדכון הסיסמה');
+      if (result.success) {
+        setSuccess('הסיסמה עודכנה בהצלחה');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setError(result.error || 'שגיאה בעדכון הסיסמה');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 

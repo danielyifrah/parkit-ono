@@ -51,6 +51,7 @@ export default function Home() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openFilterPanel, setOpenFilterPanel] = useState(null);
   const [locateRequest, setLocateRequest] = useState(0);
+  const [locateError, setLocateError] = useState('');
 
   const handleSearchChange = useCallback((e) => {
     const value = e.target.value;
@@ -65,7 +66,12 @@ export default function Home() {
 
   const handleLocate = useCallback(() => {
     setSearchLocation(null);
+    setLocateError('');
     setLocateRequest((n) => n + 1);
+  }, []);
+
+  const handleLocateError = useCallback((message) => {
+    setLocateError(message);
   }, []);
 
   useEffect(() => {
@@ -182,6 +188,15 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      {locateError && (
+        <div className="home-locate-error info-banner" role="alert">
+          <Icon icon={Crosshair} size={18} className="app-icon--primary" />
+          <p className="home-locate-error__text">{locateError}</p>
+          <Button variant="ghost" size="sm" onClick={() => setLocateError('')}>
+            סגירה
+          </Button>
+        </div>
+      )}
       {(showScheduledToast || scheduledBooking) && (
         <div className="home-scheduled-banner info-banner">
           <Icon icon={CalendarClock} size={18} className="app-icon--primary" />
@@ -250,6 +265,7 @@ export default function Home() {
             focusLocation={searchLocation}
             focusLabel={focusLabel}
             mapPadding={mapPadding}
+            onLocateError={handleLocateError}
           />
 
           {showNoResultsPanel && (

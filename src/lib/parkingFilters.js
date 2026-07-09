@@ -1,3 +1,6 @@
+import { FULL_DAY_MINUTES, toLocalDateStr } from './bookingPricing';
+import { getMaxDurationMinutes } from './availability';
+
 export const DEFAULT_FILTERS = {
   types: { private: true, public: true, office: true },
   maxPrice: null,
@@ -27,6 +30,45 @@ export const ARRIVAL_OPTIONS = [
 ];
 
 export const DURATION_OPTIONS = ['שעה', 'שעתיים', 'יום'];
+
+function durationLabelToMinutes(duration) {
+  switch (duration) {
+    case 'שעתיים':
+      return 120;
+    case 'יום':
+      return FULL_DAY_MINUTES;
+    default:
+      return 60;
+  }
+}
+
+function getArrivalDateTime(arrival) {
+  const now = new Date();
+
+  if (arrival === 'tomorrow-morning') {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return { dateStr: toLocalDateStr(tomorrow), startTime: '08:00' };
+  }
+
+  if (arrival === 'evening') {
+    return { dateStr: toLocalDateStr(now), startTime: '18:00' };
+  }
+
+  return {
+    dateStr: toLocalDateStr(now),
+    startTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+  };
+}
+
+function matchesDuration(parking, arrival, duration) {
+  if (duration === 'שעה') return true;
+
+  const requiredMinutes = durationLabelToMinutes(duration);
+  const { dateStr, startTime } = getArrivalDateTime(arrival);
+  const maxDuration = getMaxDurationMinutes(parking, dateStr, startTime);
+  return maxDuration >= requiredMinutes;
+}
 
 export function isFiltersActive(filters) {
   return (
@@ -93,6 +135,7 @@ export function applyParkingFilters(allParkings, filters) {
   }
 
   result = result.filter((p) => matchesArrival(p, filters.arrival));
+  result = result.filter((p) => matchesDuration(p, filters.arrival, filters.duration));
 
   return result;
 }

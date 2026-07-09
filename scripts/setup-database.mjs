@@ -1,17 +1,20 @@
-import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const migrationsDir = resolve(__dirname, '../supabase/migrations');
 const projectRef = process.env.SUPABASE_PROJECT_REF || 'qixjqqmbjqdknkyyjsek';
 const dbPassword = process.env.SUPABASE_DB_PASSWORD || process.env.DATABASE_PASSWORD;
 const databaseUrl = process.env.DATABASE_URL;
 
-const migrationPath = resolve(
-  __dirname,
-  '../supabase/migrations/20260708180000_initial_schema.sql',
-);
+function getMigrationFiles() {
+  return readdirSync(migrationsDir)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .map((name) => join(migrationsDir, name));
+}
 
 function buildConnectionString() {
   if (databaseUrl) return databaseUrl;
@@ -32,7 +35,12 @@ async function main() {
     process.exit(1);
   }
 
-  const sql = readFileSync(migrationPath, 'utf8');
+  const migrationFiles = getMigrationFiles();
+  if (migrationFiles.length === 0) {
+    console.error('No migration files found in supabase/migrations/');
+    process.exit(1);
+  }
+
   const client = new pg.Client({
     connectionString,
     ssl: { rejectUnauthorized: false },
@@ -40,9 +48,16 @@ async function main() {
 
   try {
     await client.connect();
-    console.log('Connected to Supabase database. Applying migration...');
-    await client.query(sql);
-    console.log('Migration applied successfully.');
+    console.log(`Connected to Supabase database. Applying ${migrationFiles.length} migration(s)...`);
+
+    for (const filePath of migrationFiles) {
+      const fileName = filePath.split('/').pop();
+      const sql = readFileSync(filePath, 'utf8');
+      console.log(`→ ${fileName}`);
+      await client.query(sql);
+    }
+
+    console.log('All migrations applied successfully.');
   } catch (error) {
     console.error('Migration failed:', error.message);
     process.exit(1);

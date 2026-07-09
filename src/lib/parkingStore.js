@@ -714,6 +714,28 @@ export function completeBooking(bookingId, userId, review = null) {
   return { ok: true, booking };
 }
 
+export function addBookingReview(bookingId, userId, review) {
+  const booking = findBooking(bookingId);
+  if (!booking || booking.userId !== userId || booking.status !== 'completed') {
+    return { ok: false, error: 'לא ניתן לשמור ביקורת להזמנה זו' };
+  }
+
+  if (booking.review?.rating) {
+    return { ok: false, error: 'כבר נשלחה ביקורת להזמנה זו' };
+  }
+
+  if (!review?.rating) {
+    return { ok: false, error: 'יש לבחור דירוג' };
+  }
+
+  booking.review = {
+    rating: review.rating,
+    text: review.text?.trim() || '',
+  };
+  persistBookingChange(booking);
+  return { ok: true, booking };
+}
+
 export function resetStore() {
   state = cloneSeed();
   persist();

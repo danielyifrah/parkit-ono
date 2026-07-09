@@ -7,6 +7,7 @@ import {
   createUserLocationIcon,
   searchCircleStyle,
 } from '../../lib/mapMarkers';
+import { getGeolocationErrorMessage } from '../../lib/geo';
 import {
   defaultMapCenter,
   defaultMapZoom,
@@ -27,6 +28,7 @@ export default function ParkingMap({
   focusLocation = null,
   focusLabel = '',
   mapPadding = DEFAULT_PADDING,
+  onLocateError,
 }) {
   const { isLoaded, loadError } = useGoogleMaps();
 
@@ -139,10 +141,11 @@ export default function ParkingMap({
 
     requestUserLocation({ enableHighAccuracy: true, maximumAge: 0 })
       .then(centerMapOnUser)
-      .catch(() => {
+      .catch((err) => {
         setUserCenterActive(false);
+        onLocateError?.(getGeolocationErrorMessage(err));
       });
-  }, [locateRequest, requestUserLocation, centerMapOnUser]);
+  }, [locateRequest, requestUserLocation, centerMapOnUser, onLocateError]);
 
   useEffect(() => {
     if (!userCenterActive || !map || !userLocation) return;

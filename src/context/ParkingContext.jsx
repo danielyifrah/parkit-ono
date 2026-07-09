@@ -1,15 +1,28 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import * as parkingStore from '../lib/parkingStore';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import Button from '../components/ui/Button';
 
 const ParkingContext = createContext(null);
+
+function loadParkingData(userId, { onSuccess, onError }) {
+  parkingStore.invalidateInit();
+
+  return parkingStore.init({ userId, force: true })
+    .then(() => onSuccess?.())
+    .catch((err) => {
+      console.error(err);
+      onError?.();
+    });
+}
 
 export function ParkingProvider({ children }) {
   const { user } = useAuth();
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(!isSupabaseConfigured());
   const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => parkingStore.subscribe(() => setVersion((v) => v + 1)), []);
 
@@ -19,29 +32,49 @@ export function ParkingProvider({ children }) {
     let active = true;
     setReady(false);
     setError(null);
-    parkingStore.invalidateInit();
 
-    parkingStore.init({ userId: user?.id || null, force: true })
-      .then(() => {
+    loadParkingData(user?.id || null, {
+      onSuccess: () => {
         if (active) setReady(true);
-      })
-      .catch((err) => {
-        console.error(err);
+      },
+      onError: () => {
         if (active) {
           setError('שגיאה בטעינת נתונים מהשרת');
           setReady(true);
         }
-      });
+      },
+    });
 
     return () => {
       active = false;
     };
   }, [user?.id]);
 
+  const retryLoad = useCallback(async () => {
+    if (!isSupabaseConfigured() || retrying) return;
+
+    setRetrying(true);
+    setReady(false);
+    setError(null);
+
+    await loadParkingData(user?.id || null, {
+      onSuccess: () => {
+        setReady(true);
+        setRetrying(false);
+      },
+      onError: () => {
+        setError('שגיאה בטעינת נתונים מהשרת');
+        setReady(true);
+        setRetrying(false);
+      },
+    });
+  }, [user?.id, retrying]);
+
   const value = useMemo(() => ({
     version,
     ready,
     error,
+    retryLoad,
     getParkings: parkingStore.getParkings,
     getParkingById: parkingStore.getParkingById,
     getAvailableParkings: parkingStore.getAvailableParkings,
@@ -75,21 +108,30 @@ export function ParkingProvider({ children }) {
     startBooking: parkingStore.startBooking,
     extendActiveBooking: parkingStore.extendActiveBooking,
     completeBooking: parkingStore.completeBooking,
+    addBookingReview: parkingStore.addBookingReview,
     HOLD_MINUTES: parkingStore.HOLD_MINUTES,
     PRE_START_HOLD_MINUTES: parkingStore.PRE_START_HOLD_MINUTES,
     SAVED_HOLD_MINUTES: parkingStore.SAVED_HOLD_MINUTES,
-  }), [version, ready, error]);
+  }), [version, ready, error, retryLoad]);
 
   if (!ready) {
     return (
       <div className="app-loading" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        טוען נתונים...
+        {retrying ? 'מנסה שוב...' : 'טוען נתונים...'}
       </div>
     );
   }
 
   return (
     <ParkingContext.Provider value={value}>
+      {error && (
+        <div className="parking-data-error" role="alert">
+          <p className="parking-data-error__text">{error}</p>
+          <Button size="sm" variant="secondary" onClick={retryLoad} disabled={retrying}>
+            {retrying ? 'מנסה...' : 'נסו שוב'}
+          </Button>
+        </div>
+      )}
       {children}
     </ParkingContext.Provider>
   );

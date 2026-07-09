@@ -168,6 +168,10 @@ export function AuthProvider({ children }) {
   }, [login, persistUser]);
 
   const register = useCallback(async (name, email, password) => {
+    if (password.length < 6) {
+      return { success: false, error: 'הסיסמה חייבת להכיל לפחות 6 תווים' };
+    }
+
     if (!isSupabaseConfigured()) {
       const newUser = {
         id: `user-${Date.now()}`,
@@ -279,6 +283,28 @@ export function AuthProvider({ children }) {
     return { success: true };
   }, [user]);
 
+  const requestPasswordReset = useCallback(async (email) => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      return { success: false, error: 'יש להזין כתובת אימייל' };
+    }
+
+    if (!isSupabaseConfigured()) {
+      await new Promise((r) => setTimeout(r, 600));
+      return { success: true };
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      return { success: false, error: 'שליחת קישור האיפוס נכשלה. נסו שוב.' };
+    }
+
+    return { success: true };
+  }, []);
+
   const logout = useCallback(async () => {
     if (isSupabaseConfigured()) {
       await supabase.auth.signOut();
@@ -298,6 +324,7 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         changePassword,
+        requestPasswordReset,
         isAuthenticated: !!user,
         isDriver: isDriver(user),
         isOwner: isOwner(user),

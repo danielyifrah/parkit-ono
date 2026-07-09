@@ -6,6 +6,10 @@ import { useParking } from '../context/ParkingContext';
 import { getOwnerStats } from '../data/mockData';
 import { toLocalDateStr } from '../lib/bookingPricing';
 import { formatDisplayDate, getDayName, getSchedulesForDate, normalizeTime } from '../lib/availability';
+import {
+  validateAvailabilityDayPlans,
+  validateOwnerParkingSettings,
+} from '../lib/parkingFormValidation';
 import StatCard from '../components/ui/StatCard';
 import ParkingCard from '../components/parking/ParkingCard';
 import Button from '../components/ui/Button';
@@ -121,6 +125,11 @@ export default function OwnerDashboard() {
   });
   const [availabilityDays, setAvailabilityDays] = useState([]);
   const [isGlobalReportsOpen, setIsGlobalReportsOpen] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   const sortedParkings = useMemo(() => (
     [...parkings].sort((a, b) => {
@@ -155,6 +164,7 @@ export default function OwnerDashboard() {
 
   const openSettings = (parking) => {
     setSettingsParking(parking);
+    setSettingsError('');
     setSettingsForm({
       image: parking.image || '',
       name: parking.name || '',
@@ -167,26 +177,79 @@ export default function OwnerDashboard() {
 
   const openAvailabilityEditor = (parking) => {
     setAvailabilityParking(parking);
+    setAvailabilityError('');
     setAvailabilityDays(buildUpcomingAvailabilityEditor(parking));
   };
 
-  const handleSaveSettings = () => {
-    if (!settingsParking) return;
-    updateParkingDetails(settingsParking.id, settingsForm);
+  const handleSaveSettings = async () => {
+    if (!settingsParking || settingsSaving) return;
+
+    const validationError = validateOwnerParkingSettings(settingsForm);
+    if (validationError) {
+      setSettingsError(validationError);
+      return;
+    }
+
+    setSettingsError('');
+    setSettingsSaving(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    updateParkingDetails(settingsParking.id, {
+      ...settingsForm,
+      name: settingsForm.name.trim(),
+      address: settingsForm.address.trim(),
+      spotNumber: settingsForm.spotNumber.trim(),
+      notes: settingsForm.notes.trim(),
+    });
+
+    setSettingsSaving(false);
     setSettingsParking(null);
   };
 
-  const handleSaveAvailability = () => {
-    if (!availabilityParking) return;
+  const handleSaveAvailability = async () => {
+    if (!availabilityParking || availabilitySaving) return;
+
+    const validationError = validateAvailabilityDayPlans(availabilityDays);
+    if (validationError) {
+      setAvailabilityError(validationError);
+      return;
+    }
+
+    setAvailabilityError('');
+    setAvailabilitySaving(true);
+    await new Promise((r) => setTimeout(r, 300));
+
     updateParkingUpcomingAvailability(availabilityParking.id, availabilityDays);
+
+    setAvailabilitySaving(false);
     setAvailabilityParking(null);
   };
 
   const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const dataUrl = await readImageAsDataUrl(file);
-    setSettingsForm((prev) => ({ ...prev, image: dataUrl }));
+
+    if (!file.type.startsWith('image/')) {
+      setSettingsError('יש לבחור קובץ תמונה');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setSettingsError('גודל התמונה המקסימלי הוא 2MB');
+      return;
+    }
+
+    setSettingsError('');
+    setImageUploading(true);
+
+    try {
+      const dataUrl = await readImageAsDataUrl(file);
+      setSettingsForm((prev) => ({ ...prev, image: dataUrl }));
+    } catch {
+      setSettingsError('שגיאה בהעלאת התמונה');
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   const updateDayPlan = (date, updater) => {
@@ -450,34 +513,56 @@ export default function OwnerDashboard() {
         onClose={() => setSettingsParking(null)}
       >
         <div className="owner-dashboard__settings-grid">
+          {settingsError && <div className="error-message">{settingsError}</div>}
+
           <Input
             label="תמונת חניה"
             type="file"
             accept="image/*"
             onChange={handleImageUpload}
+            disabled={imageUploading}
           />
+          {imageUploading && (
+            <p className="owner-dashboard__upload-status">מעלה תמונה...</p>
+          )}
           {settingsForm.image && <img src={settingsForm.image} alt="" className="owner-dashboard__image-preview" />}
           <Input
             label="שם החניה"
             value={settingsForm.name}
-            onChange={(e) => setSettingsForm((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => {
+              setSettingsError('');
+              setSettingsForm((prev) => ({ ...prev, name: e.target.value }));
+            }}
+            required
           />
           <Input
             label="כתובת"
             value={settingsForm.address}
-            onChange={(e) => setSettingsForm((prev) => ({ ...prev, address: e.target.value }))}
+            onChange={(e) => {
+              setSettingsError('');
+              setSettingsForm((prev) => ({ ...prev, address: e.target.value }));
+            }}
+            required
           />
           <Input
             label="מספר מקום חניה"
             value={settingsForm.spotNumber}
-            onChange={(e) => setSettingsForm((prev) => ({ ...prev, spotNumber: e.target.value }))}
+            onChange={(e) => {
+              setSettingsError('');
+              setSettingsForm((prev) => ({ ...prev, spotNumber: e.target.value }));
+            }}
           />
           <Input
             label="תעריף לשעה (₪)"
             type="number"
             min="1"
+            step="1"
             value={settingsForm.pricePerHour}
-            onChange={(e) => setSettingsForm((prev) => ({ ...prev, pricePerHour: e.target.value }))}
+            onChange={(e) => {
+              setSettingsError('');
+              setSettingsForm((prev) => ({ ...prev, pricePerHour: e.target.value }));
+            }}
+            required
           />
           <Textarea
             label="הערות"
@@ -487,9 +572,9 @@ export default function OwnerDashboard() {
           />
         </div>
         <div className="owner-dashboard__settings-actions">
-          <Button variant="secondary" onClick={handleSaveSettings}>
+          <Button variant="secondary" onClick={handleSaveSettings} disabled={settingsSaving || imageUploading}>
             <Icon icon={Settings} size={16} />
-            שמירת עריכה
+            {settingsSaving ? 'שומר...' : 'שמירת עריכה'}
           </Button>
           <Button variant="secondary" onClick={handleToggleFreeze}>
             <Icon icon={Snowflake} size={16} />
@@ -511,6 +596,8 @@ export default function OwnerDashboard() {
         <p className="owner-dashboard__availability-intro">
           הגדירו מתי החניה פנויה ב־7 הימים הקרובים. אפשר להשאיר ימים סגורים, או להוסיף כמה טווחים באותו יום.
         </p>
+
+        {availabilityError && <div className="error-message">{availabilityError}</div>}
 
         <div className="owner-dashboard__availability-editor">
           {availabilityDays.map((day) => (
@@ -547,7 +634,10 @@ export default function OwnerDashboard() {
                           <input
                             type="time"
                             value={slot.start}
-                            onChange={(e) => updateAvailabilitySlot(day.date, slotIndex, 'start', e.target.value)}
+                            onChange={(e) => {
+                            setAvailabilityError('');
+                            updateAvailabilitySlot(day.date, slotIndex, 'start', e.target.value);
+                          }}
                           />
                         </label>
                         <span className="owner-dashboard__time-sep">עד</span>
@@ -556,7 +646,10 @@ export default function OwnerDashboard() {
                           <input
                             type="time"
                             value={slot.end}
-                            onChange={(e) => updateAvailabilitySlot(day.date, slotIndex, 'end', e.target.value)}
+                            onChange={(e) => {
+                            setAvailabilityError('');
+                            updateAvailabilitySlot(day.date, slotIndex, 'end', e.target.value);
+                          }}
                           />
                         </label>
                       </div>
@@ -590,8 +683,8 @@ export default function OwnerDashboard() {
           ))}
         </div>
 
-        <Button fullWidth onClick={handleSaveAvailability}>
-          שמירת זמינות
+        <Button fullWidth onClick={handleSaveAvailability} disabled={availabilitySaving}>
+          {availabilitySaving ? 'שומר...' : 'שמירת זמינות'}
         </Button>
       </Modal>
     </div>

@@ -41,13 +41,15 @@ export default function BookingHistoryDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getBookingById, getParkingById } = useParking();
+  const { getBookingById, getParkingById, addBookingReview } = useParking();
   const booking = getBookingById(id);
   const parking = booking ? getParkingById(booking.parkingId) : null;
 
   const [rating, setRating] = useState(booking?.review?.rating ?? 0);
   const [reviewText, setReviewText] = useState(booking?.review?.text ?? '');
   const [savedReview, setSavedReview] = useState(booking?.review ?? null);
+  const [reviewError, setReviewError] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   if (!booking || booking.userId !== user?.id || booking.status !== 'completed' || !parking) {
     return (
@@ -64,9 +66,24 @@ export default function BookingHistoryDetails() {
   const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
   const hasReview = Boolean(savedReview?.rating);
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (rating === 0) return;
-    setSavedReview({ rating, text: reviewText.trim() });
+
+    setReviewError('');
+    setSubmittingReview(true);
+
+    const result = addBookingReview(booking.id, user.id, {
+      rating,
+      text: reviewText.trim(),
+    });
+
+    setSubmittingReview(false);
+
+    if (result.ok) {
+      setSavedReview(result.booking.review);
+    } else {
+      setReviewError(result.error || 'שגיאה בשמירת הביקורת');
+    }
   };
 
   return (
@@ -206,9 +223,14 @@ export default function BookingHistoryDetails() {
               rows={3}
               maxLength={300}
             />
-            <Button fullWidth onClick={handleSubmitReview} disabled={rating === 0}>
-              שליחת ביקורת
+            <Button
+              fullWidth
+              onClick={handleSubmitReview}
+              disabled={rating === 0 || submittingReview}
+            >
+              {submittingReview ? 'שולח...' : 'שליחת ביקורת'}
             </Button>
+            {reviewError && <p className="error-message">{reviewError}</p>}
           </div>
         )}
       </section>
