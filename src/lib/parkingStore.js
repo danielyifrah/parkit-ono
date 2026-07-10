@@ -2,6 +2,7 @@ import { parkings as seedParkings, bookings as seedBookings } from '../data/mock
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { bookingFromRow, bookingToRow, parkingFromRow, parkingToRow } from './supabaseMappers';
 import { calculateBookingPrice, getActualChargeMinutes, getElapsedMinutesFromStartedAt, toLocalDateStr } from './bookingPricing';
+import { getCancellationPreview } from './cancellationPolicy';
 import { getOwnerParkingStatus } from './ownerParkingStatus';
 import {
   addMinutesToTime,
@@ -295,9 +296,11 @@ export function isParkingBookable(
   startTime,
   durationMinutes,
   excludeBookingId = null,
+  { requireOpenNow = false } = {},
 ) {
   const parking = findParking(parkingId);
-  if (!parking || isParkingPubliclyBlocked(parkingId)) return false;
+  if (!parking) return false;
+  if (requireOpenNow && isParkingPubliclyBlocked(parkingId)) return false;
 
   const conflicts = getReservationConflicts(parkingId, excludeBookingId);
   return isParkingAvailableForSlot(parking, dateStr, startTime, durationMinutes, conflicts);
@@ -317,8 +320,7 @@ export function getAvailableParkings() {
   return state.parkings.filter(
     (p) => p.available !== false
       && p.status === 'active'
-      && hasOwnerConfiguredAvailability(p)
-      && !isParkingPubliclyBlocked(p.id),
+      && hasOwnerConfiguredAvailability(p),
   );
 }
 
@@ -393,7 +395,7 @@ export function createBooking({
   const parking = findParking(parkingId);
   if (!parking) return { ok: false, error: 'חניה לא נמצאה' };
 
-  if (isParkingPubliclyBlocked(parkingId)) {
+  if (immediate && isParkingPubliclyBlocked(parkingId)) {
     return { ok: false, error: 'החניה תפוסה כרגע על ידי משתמש אחר.' };
   }
 
@@ -491,13 +493,16 @@ export function cancelBooking(bookingId, userId) {
   if (!booking || booking.userId !== userId) return { ok: false };
   if (!['scheduled', 'saved', 'pending_arrival'].includes(booking.status)) return { ok: false };
 
+  const preview = getCancellationPreview(booking);
+
   if (booking.slotBlocked) {
     removeBookedSlot(booking.parkingId, bookingId);
   }
   booking.status = 'cancelled';
+  booking.cancellationFee = preview.fee;
   booking.slotBlocked = false;
   persistBookingChange(booking);
-  return { ok: true };
+  return { ok: true, cancellationFee: preview.fee };
 }
 
 /** @deprecated use cancelBooking */

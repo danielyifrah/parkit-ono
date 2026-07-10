@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react';
 import { toLocalDateStr } from '../../lib/bookingPricing';
+import { MAX_SEARCH_DAYS_AHEAD } from '../../lib/searchContext';
 import './DateSelector.css';
 
-function getToday() {
-  return new Date();
+function getDateWithOffset(offset) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return date;
 }
 
-function getTomorrow() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d;
+function formatCustomLabel(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const weekday = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'][date.getDay()];
+  return `${weekday} ${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
 }
 
 export default function DateSelector({ value, onChange }) {
   const [mode, setMode] = useState('today');
   const [showCalendar, setShowCalendar] = useState(false);
 
-  const todayStr = toLocalDateStr(getToday());
-  const tomorrowStr = toLocalDateStr(getTomorrow());
+  const todayStr = toLocalDateStr(getDateWithOffset(0));
+  const tomorrowStr = toLocalDateStr(getDateWithOffset(1));
+  const maxDateStr = toLocalDateStr(getDateWithOffset(MAX_SEARCH_DAYS_AHEAD));
 
   useEffect(() => {
     if (value === todayStr) setMode('today');
@@ -71,7 +76,9 @@ export default function DateSelector({ value, onChange }) {
         className={`date-selector__btn date-selector__btn--full ${mode === 'custom' ? 'date-selector__btn--active' : ''}`}
         onClick={openCustom}
       >
-        יום אחר
+        {mode === 'custom' && value !== todayStr && value !== tomorrowStr
+          ? formatCustomLabel(value)
+          : 'יום אחר'}
       </button>
       {showCalendar && (
         <input
@@ -79,6 +86,7 @@ export default function DateSelector({ value, onChange }) {
           className="date-selector__input"
           value={value}
           min={todayStr}
+          max={maxDateStr}
           onChange={handleCustomDate}
         />
       )}

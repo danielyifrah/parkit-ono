@@ -1,15 +1,16 @@
 import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Star, Clock, Image, ChevronRight, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
 import {
-  getCurrentTimeStr,
   getTodayTomorrowAvailability,
   hasOwnerConfiguredAvailability,
+  isParkingAvailableForSlot,
 } from '../lib/availability';
 import { toLocalDateStr } from '../lib/bookingPricing';
 import { durationLabelToMinutes } from '../lib/parkingFilters';
+import { isImmediateSearch, resolveSearchDateTime } from '../lib/searchContext';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import './ParkingDetails.css';
@@ -28,25 +29,39 @@ function formatDisplayDate(dateStr) {
 export default function ParkingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const {
     getParkingById,
     isParkingPubliclyBlocked,
-    isParkingBookable,
+    getReservationConflicts,
   } = useParking();
   const parking = getParkingById(id);
-  const todayTomorrowAvailability = parking ? getTodayTomorrowAvailability(parking) : [];
   const isOwner = parking?.ownerId === user?.id;
 
-  const today = toLocalDateStr(new Date());
-  const now = getCurrentTimeStr();
-  const blocked = isParkingPubliclyBlocked(id);
+  const search = location.state?.search;
+  const searchDate = search?.dateStr ?? toLocalDateStr(new Date());
+  const searchTime = search?.startTime ?? resolveSearchDateTime({ dateOffset: 0, searchTime: 'now' }).startTime;
+  const searchDurationMinutes = search?.durationMinutes ?? durationLabelToMinutes('שעה');
+  const isImmediate = search?.isImmediate ?? isImmediateSearch({ dateOffset: 0, searchTime: 'now' });
+
+  const todayTomorrowAvailability = parking ? getTodayTomorrowAvailability(parking) : [];
   const configured = parking ? hasOwnerConfiguredAvailability(parking) : false;
   const inactive = !parking?.available || parking?.status !== 'active';
-  const bookableNow = useMemo(
-    () => isParkingBookable(id, today, now, durationLabelToMinutes('שעה')),
-    [id, today, now, isParkingBookable],
-  );
+  const blockedNow = parking ? isParkingPubliclyBlocked(parking.id) : false;
+  const blockedForSearch = isImmediate && blockedNow;
+
+  const bookableForSearch = useMemo(() => {
+    if (!parking || inactive || !configured || blockedForSearch) return false;
+    const conflicts = getReservationConflicts(parking.id);
+    return isParkingAvailableForSlot(
+      parking,
+      searchDate,
+      searchTime,
+      searchDurationMinutes,
+      conflicts,
+    );
+  }, [parking, inactive, configured, blockedForSearch, searchDate, searchTime, searchDurationMinutes, getReservationConflicts]);
 
   if (!parking) {
     return (
@@ -81,22 +96,35 @@ export default function ParkingDetails() {
       <span className="badge__dot" />
       טרם הוגדרה זמינות
     </span>
-  ) : blocked ? (
+  ) : blockedForSearch ? (
     <span className="badge badge--error">
       <span className="badge__dot" />
       תפוסה כרגע
     </span>
-  ) : bookableNow ? (
+  ) : bookableForSearch ? (
     <span className="badge badge--success">
       <span className="badge__dot" />
-      פנוי עכשיו
+      {isImmediate ? 'פנוי עכשיו' : 'זמין לחיפוש'}
     </span>
   ) : (
     <span className="badge badge--inactive">
       <span className="badge__dot" />
-      לא זמין עכשיו
+      לא זמין בזמן שנבחר
     </span>
   );
+
+  const handleBook = () => {
+    navigate(`/parking/${id}/book`, {
+      state: {
+        search: {
+          dateStr: searchDate,
+          startTime: searchTime,
+          durationMinutes: searchDurationMinutes,
+          isImmediate,
+        },
+      },
+    });
+  };
 
   return (
     <div className="page parking-details">
@@ -194,18 +222,18 @@ export default function ParkingDetails() {
             <Button
               fullWidth
               size="lg"
-              onClick={() => navigate(`/parking/${id}/book`)}
-              disabled={!bookableNow || inactive || !configured}
+              onClick={handleBook}
+              disabled={!bookableForSearch || inactive || !configured}
             >
               {!configured
                 ? 'יש להגדיר זמינות לפני הזמנה'
                 : inactive
                   ? 'החניה לא פעילה'
-                  : blocked
+                  : blockedForSearch
                     ? 'החניה תפוסה כרגע'
-                    : bookableNow
+                    : bookableForSearch
                       ? 'הזמן חניה'
-                      : 'החניה לא זמינה עכשיו'}
+                      : 'החניה לא זמינה בזמן שנבחר'}
             </Button>
           </div>
         </div>

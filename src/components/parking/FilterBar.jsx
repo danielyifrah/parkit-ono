@@ -1,31 +1,60 @@
 import { Clock, Banknote, Star, ChevronDown, Home, CircleParking, Building2, SlidersHorizontal } from 'lucide-react';
 import Icon from '../ui/Icon';
 import {
-  ARRIVAL_OPTIONS,
   DURATION_OPTIONS,
   PRICE_OPTIONS,
   RATING_OPTIONS,
+  buildSearchDateOptions,
   isFiltersActive,
+  isPanelActive,
+  normalizeFilters,
+  SEARCH_TIME_OPTIONS,
+  getSearchSummaryLabel,
 } from '../../lib/parkingFilters';
 import './FilterBar.css';
 
-export function FilterFields({ filters, onChange }) {
-  const setTypes = (type, checked) => {
-    onChange({
-      types: { ...filters.types, [type]: checked },
-    });
+function SearchTimeFields({ filters, onChange }) {
+  const normalized = normalizeFilters(filters);
+  const dateOptions = buildSearchDateOptions();
+  const isToday = normalized.dateOffset === 0;
+  const timeOptions = isToday
+    ? SEARCH_TIME_OPTIONS
+    : SEARCH_TIME_OPTIONS.filter((option) => option.value !== 'now');
+
+  const handleDateOffset = (offset) => {
+    const next = { dateOffset: offset };
+    if (offset > 0 && normalized.searchTime === 'now') {
+      next.searchTime = '08:00';
+    }
+    onChange(next);
   };
 
   return (
     <>
       <div className="filter-fields__section">
-        <label className="filter-fields__label">זמן הגעה</label>
+        <label className="filter-fields__label">תאריך הגעה</label>
+        <div className="filter-fields__date-grid">
+          {dateOptions.map((option) => (
+            <button
+              key={option.offset}
+              type="button"
+              className={`filter-fields__date-btn ${normalized.dateOffset === option.offset ? 'filter-fields__date-btn--active' : ''}`}
+              onClick={() => handleDateOffset(option.offset)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-fields__section">
+        <label className="filter-fields__label">שעת הגעה</label>
         <select
           className="filter-fields__select"
-          value={filters.arrival}
-          onChange={(e) => onChange({ arrival: e.target.value })}
+          value={normalized.searchTime}
+          onChange={(e) => onChange({ searchTime: e.target.value })}
         >
-          {ARRIVAL_OPTIONS.map((opt) => (
+          {timeOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -38,7 +67,7 @@ export function FilterFields({ filters, onChange }) {
             <button
               key={d}
               type="button"
-              className={`filter-fields__toggle-btn ${filters.duration === d ? 'filter-fields__toggle-btn--active' : ''}`}
+              className={`filter-fields__toggle-btn ${normalized.duration === d ? 'filter-fields__toggle-btn--active' : ''}`}
               onClick={() => onChange({ duration: d })}
             >
               {d}
@@ -46,6 +75,26 @@ export function FilterFields({ filters, onChange }) {
           ))}
         </div>
       </div>
+    </>
+  );
+}
+
+export function FilterFields({ filters, onChange }) {
+  const normalized = normalizeFilters(filters);
+
+  const setTypes = (type, checked) => {
+    onChange({
+      types: { ...normalized.types, [type]: checked },
+    });
+  };
+
+  const updateFilters = (partial) => {
+    onChange({ ...normalized, ...partial });
+  };
+
+  return (
+    <>
+      <SearchTimeFields filters={normalized} onChange={updateFilters} />
 
       <div className="filter-fields__section">
         <label className="filter-fields__label">מחיר מקסימלי</label>
@@ -54,8 +103,8 @@ export function FilterFields({ filters, onChange }) {
             <button
               key={opt.label}
               type="button"
-              className={`filter-fields__option ${filters.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
-              onClick={() => onChange({ maxPrice: opt.value })}
+              className={`filter-fields__option ${normalized.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
+              onClick={() => updateFilters({ maxPrice: opt.value })}
             >
               {opt.label}
             </button>
@@ -70,8 +119,8 @@ export function FilterFields({ filters, onChange }) {
             <button
               key={opt.label}
               type="button"
-              className={`filter-fields__option ${filters.minRating === opt.value ? 'filter-fields__option--active' : ''}`}
-              onClick={() => onChange({ minRating: opt.value })}
+              className={`filter-fields__option ${normalized.minRating === opt.value ? 'filter-fields__option--active' : ''}`}
+              onClick={() => updateFilters({ minRating: opt.value })}
             >
               {opt.label}
             </button>
@@ -84,7 +133,7 @@ export function FilterFields({ filters, onChange }) {
         <label className="filter-fields__checkbox">
           <input
             type="checkbox"
-            checked={filters.types.private}
+            checked={normalized.types.private}
             onChange={(e) => setTypes('private', e.target.checked)}
           />
           <Icon icon={Home} size={16} className="app-icon--muted" />
@@ -93,7 +142,7 @@ export function FilterFields({ filters, onChange }) {
         <label className="filter-fields__checkbox">
           <input
             type="checkbox"
-            checked={filters.types.public}
+            checked={normalized.types.public}
             onChange={(e) => setTypes('public', e.target.checked)}
           />
           <Icon icon={CircleParking} size={16} className="app-icon--muted" />
@@ -102,7 +151,7 @@ export function FilterFields({ filters, onChange }) {
         <label className="filter-fields__checkbox">
           <input
             type="checkbox"
-            checked={filters.types.office}
+            checked={normalized.types.office}
             onChange={(e) => setTypes('office', e.target.checked)}
           />
           <Icon icon={Building2} size={16} className="app-icon--muted" />
@@ -114,48 +163,26 @@ export function FilterFields({ filters, onChange }) {
 }
 
 function TimePanel({ filters, onChange }) {
+  const normalized = normalizeFilters(filters);
+  const updateFilters = (partial) => onChange({ ...normalized, ...partial });
+
   return (
     <div className="filter-bar__panel-content">
-      <div className="filter-fields__section">
-        <label className="filter-fields__label">זמן הגעה</label>
-        <select
-          className="filter-fields__select"
-          value={filters.arrival}
-          onChange={(e) => onChange({ arrival: e.target.value })}
-        >
-          {ARRIVAL_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      </div>
-      <div className="filter-fields__section">
-        <label className="filter-fields__label">משך זמן</label>
-        <div className="filter-fields__toggle">
-          {DURATION_OPTIONS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              className={`filter-fields__toggle-btn ${filters.duration === d ? 'filter-fields__toggle-btn--active' : ''}`}
-              onClick={() => onChange({ duration: d })}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-      </div>
+      <SearchTimeFields filters={normalized} onChange={updateFilters} />
     </div>
   );
 }
 
 function PricePanel({ filters, onChange }) {
+  const normalized = normalizeFilters(filters);
   return (
     <div className="filter-bar__panel-content filter-fields__options">
       {PRICE_OPTIONS.map((opt) => (
         <button
           key={opt.label}
           type="button"
-          className={`filter-fields__option ${filters.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
-          onClick={() => onChange({ maxPrice: opt.value })}
+          className={`filter-fields__option ${normalized.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
+          onClick={() => onChange({ ...normalized, maxPrice: opt.value })}
         >
           {opt.label}
         </button>
@@ -165,14 +192,15 @@ function PricePanel({ filters, onChange }) {
 }
 
 function RatingPanel({ filters, onChange }) {
+  const normalized = normalizeFilters(filters);
   return (
     <div className="filter-bar__panel-content filter-fields__options">
       {RATING_OPTIONS.map((opt) => (
         <button
           key={opt.label}
           type="button"
-          className={`filter-fields__option ${filters.minRating === opt.value ? 'filter-fields__option--active' : ''}`}
-          onClick={() => onChange({ minRating: opt.value })}
+          className={`filter-fields__option ${normalized.minRating === opt.value ? 'filter-fields__option--active' : ''}`}
+          onClick={() => onChange({ ...normalized, minRating: opt.value })}
         >
           {opt.label}
         </button>
@@ -195,28 +223,28 @@ export default function FilterBar({
   onClear,
   className = '',
 }) {
-  const hasActiveFilters = isFiltersActive(filters);
+  const normalized = normalizeFilters(filters);
+  const hasActiveFilters = isFiltersActive(normalized);
 
   const handleChipClick = (id) => {
     onOpenPanel?.(openPanel === id ? null : id);
   };
 
   const getChipLabel = (id, defaultLabel) => {
-    if (id === 'price' && filters.maxPrice != null) {
-      return `עד ₪${filters.maxPrice}`;
+    if (id === 'price' && normalized.maxPrice != null) {
+      return `עד ₪${normalized.maxPrice}`;
     }
-    if (id === 'rating' && filters.minRating != null) {
-      return `${filters.minRating}+`;
+    if (id === 'rating' && normalized.minRating != null) {
+      return `${normalized.minRating}+`;
     }
-    if (id === 'time' && (filters.arrival !== 'now' || filters.duration !== 'שעה')) {
-      const arrival = ARRIVAL_OPTIONS.find((o) => o.value === filters.arrival);
-      return arrival?.value !== 'now' ? arrival?.label : filters.duration;
+    if (id === 'time' && isPanelActive(normalized, 'time')) {
+      return getSearchSummaryLabel(normalized);
     }
     return defaultLabel;
   };
 
   const updateFilters = (partial) => {
-    onChange({ ...filters, ...partial });
+    onChange({ ...normalized, ...partial });
   };
 
   return (
@@ -236,10 +264,10 @@ export default function FilterBar({
           const isOpen = openPanel === chip.id;
           const isActive = isOpen || (
             chip.id === 'time'
-              ? filters.arrival !== 'now' || filters.duration !== 'שעה'
+              ? isPanelActive(normalized, 'time')
               : chip.id === 'price'
-                ? filters.maxPrice != null
-                : filters.minRating != null
+                ? normalized.maxPrice != null
+                : normalized.minRating != null
           );
 
           return (
@@ -265,13 +293,13 @@ export default function FilterBar({
       {openPanel && openPanel !== 'filters' && (
         <div className="filter-bar__panel">
           {openPanel === 'time' && (
-            <TimePanel filters={filters} onChange={updateFilters} />
+            <TimePanel filters={normalized} onChange={updateFilters} />
           )}
           {openPanel === 'price' && (
-            <PricePanel filters={filters} onChange={updateFilters} />
+            <PricePanel filters={normalized} onChange={updateFilters} />
           )}
           {openPanel === 'rating' && (
-            <RatingPanel filters={filters} onChange={updateFilters} />
+            <RatingPanel filters={normalized} onChange={updateFilters} />
           )}
         </div>
       )}
@@ -280,11 +308,12 @@ export default function FilterBar({
 }
 
 export function SidebarFilters({ filters, onChange, onClear }) {
-  const updateFilters = (partial) => {
-    onChange({ ...filters, ...partial });
-  };
+  const normalized = normalizeFilters(filters);
+  const hasActiveFilters = isFiltersActive(normalized);
 
-  const hasActiveFilters = isFiltersActive(filters);
+  const updateFilters = (partial) => {
+    onChange({ ...normalized, ...partial });
+  };
 
   return (
     <div className="sidebar-filters">
@@ -303,7 +332,7 @@ export function SidebarFilters({ filters, onChange, onClear }) {
         </button>
       </div>
 
-      <FilterFields filters={filters} onChange={updateFilters} />
+      <FilterFields filters={normalized} onChange={updateFilters} />
     </div>
   );
 }

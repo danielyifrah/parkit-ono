@@ -10,7 +10,11 @@ import {
   DEFAULT_FILTERS,
   applyParkingFilters,
   isFiltersActive,
+  buildSearchStateFromFilters,
+  isImmediateSearch,
+  normalizeFilters,
 } from '../lib/parkingFilters';
+import { getCancellationPreview } from '../lib/cancellationPolicy';
 import { getDistanceKm } from '../lib/geo';
 import { searchRadiusKm } from '../lib/googleMapsConfig';
 import ParkingMap from '../components/parking/ParkingMap';
@@ -37,6 +41,7 @@ export default function Home() {
     getParkingById,
     cancelBooking,
     getReservationConflicts,
+    isParkingPubliclyBlocked,
     PRE_START_HOLD_MINUTES,
   } = useParking();
   const availableParkings = getAvailableParkings();
@@ -87,7 +92,12 @@ export default function Home() {
   }, [searchQuery, handleSearchChange, handlePlaceSelect, handleLocate, setSearch]);
 
   const filteredParkings = useMemo(() => {
-    let result = applyParkingFilters(availableParkings, filters, getReservationConflicts);
+    let result = applyParkingFilters(
+      availableParkings,
+      filters,
+      getReservationConflicts,
+      isParkingPubliclyBlocked,
+    );
 
     if (searchLocation) {
       result = result
@@ -112,7 +122,7 @@ export default function Home() {
     }
 
     return result;
-  }, [searchQuery, searchLocation, filters, availableParkings, getReservationConflicts]);
+  }, [searchQuery, searchLocation, filters, availableParkings, getReservationConflicts, isParkingPubliclyBlocked]);
 
   const hasActiveSearch = Boolean(searchLocation || searchQuery.trim());
   const hasActiveFilters = isFiltersActive(filters);
@@ -130,12 +140,18 @@ export default function Home() {
   }, [filteredParkings, selectedId]);
 
   const handleFiltersChange = (nextFilters) => {
-    setFilters(nextFilters);
+    setFilters(normalizeFilters(nextFilters));
   };
 
   const clearFilters = () => {
-    setFilters(DEFAULT_FILTERS);
+    setFilters({ ...DEFAULT_FILTERS });
     setOpenFilterPanel(null);
+  };
+
+  const searchState = useMemo(() => buildSearchStateFromFilters(filters), [filters]);
+
+  const handleViewParking = (parkingId) => {
+    navigate(`/parking/${parkingId}`, { state: { search: searchState } });
   };
 
   const clearSearch = () => {
@@ -207,6 +223,8 @@ export default function Home() {
               <span dir="rtl">
                 {scheduledParking.name} · {formatBookingScheduleRtl(scheduledBooking)}
                 {' · '}
+                {getCancellationPreview(scheduledBooking).message}
+                {' · '}
                 {PRE_START_HOLD_MINUTES} דקות לפני ההתחלה תועברו למסך ההמתנה
               </span>
             )}
@@ -218,7 +236,16 @@ export default function Home() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => cancelBooking(scheduledBooking.id, user.id)}
+              onClick={() => {
+                const preview = getCancellationPreview(scheduledBooking);
+                if (preview.fee > 0) {
+                  const confirmed = window.confirm(
+                    `ביטול ההזמנה יחויב ב-₪${preview.fee}. להמשיך?`,
+                  );
+                  if (!confirmed) return;
+                }
+                cancelBooking(scheduledBooking.id, user.id);
+              }}
             >
               ביטול
             </Button>
@@ -288,15 +315,15 @@ export default function Home() {
                 <ParkingCard
                   parking={selectedParking}
                   variant="overlay"
-                  availabilityLabel={filters.arrival === 'now' ? 'פנוי עכשיו' : 'זמין לחיפוש'}
-                  onViewDetails={(id) => navigate(`/parking/${id}`)}
+                  availabilityLabel={isImmediateSearch(filters) ? 'פנוי עכשיו' : 'זמין לחיפוש'}
+                  onViewDetails={handleViewParking}
                 />
               </div>
               <div className="home-mobile-card mobile-only">
                 <ParkingCard
                   parking={selectedParking}
                   variant="compact"
-                  onViewDetails={(id) => navigate(`/parking/${id}`)}
+                  onViewDetails={handleViewParking}
                 />
               </div>
             </>

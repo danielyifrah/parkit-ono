@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
@@ -13,6 +13,7 @@ import {
   isStartTimeNow,
 } from '../lib/availability';
 import { calculateBookingPrice, toLocalDateStr, formatDurationLabel, MINIMUM_CHARGE_MINUTES } from '../lib/bookingPricing';
+import { getCancellationPolicyDescription } from '../lib/cancellationPolicy';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Icon from '../components/ui/Icon';
@@ -24,6 +25,7 @@ import './Booking.css';
 export default function Booking() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const {
     getParkingById,
@@ -37,10 +39,11 @@ export default function Booking() {
     HOLD_MINUTES,
   } = useParking();
   const parking = getParkingById(id);
+  const initialSearch = location.state?.search;
 
-  const [date, setDate] = useState(() => toLocalDateStr(new Date()));
-  const [startTime, setStartTime] = useState(() => getCurrentTimeStr());
-  const [durationMinutes, setDurationMinutes] = useState(120);
+  const [date, setDate] = useState(() => initialSearch?.dateStr || toLocalDateStr(new Date()));
+  const [startTime, setStartTime] = useState(() => initialSearch?.startTime || getCurrentTimeStr());
+  const [durationMinutes, setDurationMinutes] = useState(() => initialSearch?.durationMinutes || 120);
   const [error, setError] = useState('');
   const [availabilityHint, setAvailabilityHint] = useState('');
   const [loading, setLoading] = useState(false);
@@ -125,7 +128,10 @@ export default function Booking() {
     navigate('/', { replace: true });
   };
 
-  if (isParkingOccupiedByOther(parking.id, user?.id || '')) {
+  const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
+  const isImmediate = isStartTimeNow(date, startTime);
+
+  if (isImmediate && isParkingOccupiedByOther(parking.id, user?.id || '')) {
     return (
       <div className="page">
         <div className="empty-state card">
@@ -136,9 +142,6 @@ export default function Booking() {
       </div>
     );
   }
-
-  const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
-  const isImmediate = isStartTimeNow(date, startTime);
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -243,8 +246,17 @@ export default function Booking() {
             <p>
               {isImmediate
                 ? 'שעת ההתחלה מוגדרת לעכשיו. לאחר האישור תוכלו להתחיל מיד או לשמור ל-10 דקות.'
-                : 'ההזמנה תישמר. 10 דקות לפני השעה תועברו למסך ההמתנה.'}
+                : 'החניה תישמר עבורכם עד לשעת ההתחלה. 10 דקות לפני תוכלו להיכנס למסך ההמתנה.'}
             </p>
+            {!isImmediate && (
+              <p className="booking-page__cancellation-note">
+                {getCancellationPolicyDescription({
+                  date,
+                  startTime,
+                  createdAt: new Date().toISOString(),
+                })}
+              </p>
+            )}
           </div>
         </div>
 
