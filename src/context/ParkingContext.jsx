@@ -78,6 +78,7 @@ export function ParkingProvider({ children }) {
     getParkings: parkingStore.getParkings,
     getParkingById: parkingStore.getParkingById,
     getAvailableParkings: parkingStore.getAvailableParkings,
+    getBookings: parkingStore.getBookings,
     getBookingsByUserId: parkingStore.getBookingsByUserId,
     getBookingById: parkingStore.getBookingById,
     getProfileById: parkingStore.getProfileById,
