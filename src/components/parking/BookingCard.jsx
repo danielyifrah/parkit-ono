@@ -4,8 +4,10 @@ import { useParking } from '../../context/ParkingContext';
 import Icon from '../ui/Icon';
 
 const statusLabels = {
+  scheduled: { text: 'שמורה', class: 'badge--success' },
+  pending_arrival: { text: 'ממתינה', class: 'badge--success' },
   active: { text: 'פעילה', class: 'badge--success' },
-  saved: { text: 'שמורה', class: 'badge--success' },
+  saved: { text: 'בהמתנה', class: 'badge--success' },
   completed: { text: 'הושלמה', class: 'badge--inactive' },
   cancelled: { text: 'בוטלה', class: 'badge--error' },
 };

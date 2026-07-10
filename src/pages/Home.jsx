@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Crosshair, Search, CalendarClock } from 'lucide-react';
+import { MapPin, Crosshair, Search } from 'lucide-react';
 import { recentSearches } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
-import { formatBookingScheduleRtl } from '../lib/availability';
 import { useHeaderSearch } from '../context/HeaderContext';
 import {
   DEFAULT_FILTERS,
@@ -14,13 +13,13 @@ import {
   isImmediateSearch,
   normalizeFilters,
 } from '../lib/parkingFilters';
-import { getCancellationPreview } from '../lib/cancellationPolicy';
 import { getDistanceKm } from '../lib/geo';
 import { searchRadiusKm } from '../lib/googleMapsConfig';
 import ParkingMap from '../components/parking/ParkingMap';
 import PlacesSearchInput from '../components/parking/PlacesSearchInput';
 import FilterBar, { SidebarFilters } from '../components/parking/FilterBar';
 import ParkingCard from '../components/parking/ParkingCard';
+import ScheduledBookingStrip from '../components/booking/ScheduledBookingStrip';
 import Icon from '../components/ui/Icon';
 import Button from '../components/ui/Button';
 import './Home.css';
@@ -39,10 +38,8 @@ export default function Home() {
     getAvailableParkings,
     getScheduledBookingByUserId,
     getParkingById,
-    cancelBooking,
     getReservationConflicts,
     isParkingPubliclyBlocked,
-    PRE_START_HOLD_MINUTES,
   } = useParking();
   const availableParkings = getAvailableParkings();
   const scheduledBooking = getScheduledBookingByUserId(user?.id || '');
@@ -183,6 +180,11 @@ export default function Home() {
     return () => media.removeEventListener('change', onChange);
   }, []);
 
+  const handleOpenScheduledBooking = () => {
+    if (!scheduledBooking) return;
+    navigate(`/history/${scheduledBooking.id}`);
+  };
+
   const mapPadding = useMemo(() => {
     const hasBottomPanel = showNoResultsPanel || Boolean(selectedParking);
 
@@ -214,43 +216,12 @@ export default function Home() {
           </Button>
         </div>
       )}
-      {(showScheduledToast || scheduledBooking) && (
-        <div className="home-scheduled-banner info-banner">
-          <Icon icon={CalendarClock} size={18} className="app-icon--primary" />
-          <div className="home-scheduled-banner__text">
-            <strong>החניה שמורה</strong>
-            {scheduledBooking && scheduledParking && (
-              <span dir="rtl">
-                {scheduledParking.name} · {formatBookingScheduleRtl(scheduledBooking)}
-                {' · '}
-                {getCancellationPreview(scheduledBooking).message}
-                {' · '}
-                {PRE_START_HOLD_MINUTES} דקות לפני ההתחלה תועברו למסך ההמתנה
-              </span>
-            )}
-            {showScheduledToast && !scheduledBooking && (
-              <span>ההזמנה נשמרה בהצלחה</span>
-            )}
-          </div>
-          {scheduledBooking && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const preview = getCancellationPreview(scheduledBooking);
-                if (preview.fee > 0) {
-                  const confirmed = window.confirm(
-                    `ביטול ההזמנה יחויב ב-₪${preview.fee}. להמשיך?`,
-                  );
-                  if (!confirmed) return;
-                }
-                cancelBooking(scheduledBooking.id, user.id);
-              }}
-            >
-              ביטול
-            </Button>
-          )}
-        </div>
+      {(showScheduledToast || scheduledBooking) && scheduledBooking && scheduledParking && (
+        <ScheduledBookingStrip
+          booking={scheduledBooking}
+          parking={scheduledParking}
+          onClick={handleOpenScheduledBooking}
+        />
       )}
       <div className="home-layout">
         <div className="home-mobile-top mobile-only">

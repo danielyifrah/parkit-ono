@@ -205,6 +205,54 @@
   margin: 0;
 }
 
+.booking-history-details__status-top {
+  margin-bottom: 8px;
+}
+
+.booking-history-details__upcoming-text {
+  margin: 0 0 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.booking-history-details__policy,
+.booking-history-details__policy-note {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.booking-history-details__policy-note {
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__estimated {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  font-size: 0.875rem;
+}
+
+.booking-history-details__estimated strong {
+  font-size: 1rem;
+}
+
+.booking-history-details__cancelled-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.booking-history-details__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (min-width: 768px) {
   .booking-history-details {
     max-width: 640px;
