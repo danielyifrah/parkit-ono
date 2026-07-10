@@ -167,10 +167,13 @@ export function AuthProvider({ children }) {
     return login('israel@example.com', DEMO_PASSWORD);
   }, [login, persistUser]);
 
-  const register = useCallback(async (name, email, password) => {
+  const register = useCallback(async (name, email, password, role = USER_ROLES.DRIVER) => {
     if (password.length < 6) {
       return { success: false, error: 'הסיסמה חייבת להכיל לפחות 6 תווים' };
     }
+
+    // Only driver/owner can self-register; admin is never assignable here
+    const registerRole = role === USER_ROLES.OWNER ? USER_ROLES.OWNER : USER_ROLES.DRIVER;
 
     if (!isSupabaseConfigured()) {
       const newUser = {
@@ -178,7 +181,7 @@ export function AuthProvider({ children }) {
         name,
         email,
         phone: '',
-        role: USER_ROLES.DRIVER,
+        role: registerRole,
         avatar: null,
       };
       setStoredPassword(email, password);
@@ -190,7 +193,7 @@ export function AuthProvider({ children }) {
       email,
       password,
       options: {
-        data: { name, role: USER_ROLES.DRIVER },
+        data: { name, role: registerRole },
       },
     });
 
@@ -198,11 +201,24 @@ export function AuthProvider({ children }) {
       return { success: false, error: error.message || 'ההרשמה נכשלה' };
     }
 
+    let authUser = data.user;
     if (!data.session) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (signInError) {
         return { success: false, error: 'נרשמת בהצלחה. אשרו את האימייל ואז התחברו.' };
       }
+      authUser = signInData.user;
+    }
+
+    if (authUser) {
+      const profile = await fetchProfileByAuthUser(authUser);
+      persistUser({
+        ...profile,
+        name: profile.name || name,
+      });
     }
 
     return { success: true };
@@ -211,14 +227,16 @@ export function AuthProvider({ children }) {
   const updateProfile = useCallback(async (updates) => {
     if (!user) return { success: false, error: 'לא מחובר' };
 
-    const nextUser = { ...user, ...updates };
+    // role cannot be changed via profile update
+    const { role: _ignoredRole, ...safeUpdates } = updates;
+    const nextUser = { ...user, ...safeUpdates };
 
     if (!isSupabaseConfigured()) {
-      const emailChanged = updates.email && updates.email !== user.email;
+      const emailChanged = safeUpdates.email && safeUpdates.email !== user.email;
       if (emailChanged) {
         const storedPassword = getStoredPassword(user.email);
         if (storedPassword) {
-          setStoredPassword(updates.email, storedPassword);
+          setStoredPassword(safeUpdates.email, storedPassword);
           const credentials = loadCredentials();
           delete credentials[user.email];
           saveCredentials(credentials);
@@ -237,8 +255,8 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'עדכון הפרופיל נכשל' };
     }
 
-    if (updates.email && updates.email !== user.email) {
-      const { error: authError } = await supabase.auth.updateUser({ email: updates.email });
+    if (safeUpdates.email && safeUpdates.email !== user.email) {
+      const { error: authError } = await supabase.auth.updateUser({ email: safeUpdates.email });
       if (authError) {
         return { success: false, error: 'עדכון האימייל נכשל' };
       }

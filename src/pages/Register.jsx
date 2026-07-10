@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useMatch, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { USER_ROLES } from '../lib/roles';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const isOwnerSignup = Boolean(useMatch('/register/owner'));
+  const role = isOwnerSignup ? USER_ROLES.OWNER : USER_ROLES.DRIVER;
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,10 +32,10 @@ export default function Register() {
     }
 
     setSubmitting(true);
-    const result = await register(name.trim(), email.trim(), password);
+    const result = await register(name.trim(), email.trim(), password, role);
     setSubmitting(false);
     if (result.success) {
-      navigate('/');
+      navigate(isOwnerSignup ? '/partner' : '/');
     } else {
       setError(result.error);
     }
@@ -44,7 +48,14 @@ export default function Register() {
           <span className="auth-logo-icon">P</span>
           <span className="auth-logo-text">Parkit</span>
         </div>
-        <h1 className="auth-title">הרשמה</h1>
+        <h1 className={`auth-title${isOwnerSignup ? ' auth-title--with-subtitle' : ''}`}>
+          {isOwnerSignup ? 'הירשם כבעל חניה' : 'הרשמה'}
+        </h1>
+        {isOwnerSignup && (
+          <p className="auth-subtitle">
+            חשבון בעל חניה מאפשר לפרסם חניות, לנהל זמינות — וגם להזמין חניות כמו נהג.
+          </p>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
@@ -74,12 +85,27 @@ export default function Register() {
             required
           />
           <Button type="submit" fullWidth size="lg" disabled={submitting}>
-            {submitting ? 'נרשם...' : 'הרשמה'}
+            {submitting
+              ? 'נרשם...'
+              : isOwnerSignup
+                ? 'הירשם כבעל חניה'
+                : 'הרשמה'}
           </Button>
         </form>
 
         <p className="auth-switch">
           כבר יש לך חשבון? <Link to="/login">התחברות</Link>
+        </p>
+        <p className="auth-switch auth-switch--secondary">
+          {isOwnerSignup ? (
+            <>
+              רוצים רק להזמין חניה? <Link to="/register">הרשמה כנהג</Link>
+            </>
+          ) : (
+            <>
+              יש לכם חניה פנויה? <Link to="/register/owner">הירשם כבעל חניה</Link>
+            </>
+          )}
         </p>
       </div>
     </div>

@@ -260,7 +260,8 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
                         44,
                         ((booking.endMin - booking.startMin) / 60) * HOUR_HEIGHT - 3,
                       );
-                      const showBooker = height >= 64;
+                      const showStatus = height >= 64;
+                      const statusLabel = STATUS_LABELS[booking.status] || 'תפוסה';
 
                       return (
                         <article
@@ -273,7 +274,7 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
                             borderColor: booking.color.border,
                             color: booking.color.text,
                           }}
-                          title={`${booking.parkingName} · ${booking.startTime}–${booking.endTime} · ${booking.bookerName} · ${STATUS_LABELS[booking.status] || booking.status}`}
+                          title={`${booking.parkingName} · ${booking.startTime}–${booking.endTime} · ${statusLabel}`}
                         >
                           <strong className="owner-week-schedule__event-name">
                             {booking.parkingName}
@@ -281,9 +282,9 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
                           <span className="owner-week-schedule__event-time" dir="ltr">
                             {booking.startTime}–{booking.endTime}
                           </span>
-                          {showBooker && (
-                            <span className="owner-week-schedule__event-booker">
-                              {booking.bookerName}
+                          {showStatus && (
+                            <span className="owner-week-schedule__event-status">
+                              {statusLabel}
                             </span>
                           )}
                         </article>

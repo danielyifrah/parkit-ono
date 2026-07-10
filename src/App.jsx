@@ -25,6 +25,7 @@ import PaymentMethods from './pages/PaymentMethods';
 import Support from './pages/Support';
 import OwnerDashboard from './pages/OwnerDashboard';
 import AddParking from './pages/AddParking';
+import AdminDashboard from './pages/AdminDashboard';
 
 function AppRoutes() {
   const { loading } = useAuth();
@@ -47,6 +48,7 @@ function AppRoutes() {
             {/* Public routes inside layout */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register/owner" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected routes */}
@@ -73,6 +75,14 @@ function AppRoutes() {
               element={(
                 <RoleRoute roles={[USER_ROLES.OWNER]}>
                   <AddParking />
+                </RoleRoute>
+              )}
+            />
+            <Route
+              path="/admin"
+              element={(
+                <RoleRoute roles={[USER_ROLES.ADMIN]}>
+                  <AdminDashboard />
                 </RoleRoute>
               )}
             />

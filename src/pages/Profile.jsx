@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell, Globe, CircleDollarSign, Lock, Clock, CreditCard, LogOut,
-  Pencil, ShieldCheck, Building2, ChevronLeft, User,
+  CircleDollarSign, Lock, Clock, CreditCard, LogOut,
+  Pencil, ShieldCheck, Building2, ChevronLeft, User, Shield,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
-import { isOwner } from '../lib/roles';
+import { isAdmin, isOwner } from '../lib/roles';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import EditProfileModal from '../components/profile/EditProfileModal';
@@ -16,8 +16,6 @@ import CurrencyModal from '../components/profile/CurrencyModal';
 import './Profile.css';
 
 const generalSettingsBase = [
-  { icon: Bell, title: 'העדפות התראות', comingSoon: true },
-  { icon: Globe, title: 'שפה', subtitle: 'עברית', comingSoon: true },
   { icon: CircleDollarSign, title: 'מטבע', action: 'currency' },
   { icon: Lock, title: 'אבטחה וסיסמה', action: 'security' },
 ];
@@ -42,6 +40,7 @@ export default function Profile() {
     completedParkings: userBookings.filter((b) => b.status === 'completed').length,
   };
   const showPartnerPortal = isOwner(user);
+  const showAdminPortal = isAdmin(user);
 
   const generalSettings = generalSettingsBase.map((item) => (
     item.action === 'currency'
@@ -59,13 +58,13 @@ export default function Profile() {
   };
 
   const handleSetting = (item) => {
-    if (item.comingSoon) return;
     if (item.action === 'security') {
       setSecurityOpen(true);
     } else if (item.action === 'currency') {
       setCurrencyOpen(true);
     }
   };
+
 
   const contactLine = user?.phone || user?.email;
 
@@ -85,10 +84,10 @@ export default function Profile() {
               <div className="profile-card__info">
                 <h2 className="profile-card__name">{user?.name || 'משתמש'}</h2>
                 <p className="profile-card__email">{contactLine}</p>
-                {user?.role === 'admin' && (
+                {showAdminPortal && (
                   <span className="profile-card__role-badge">מנהל מערכת</span>
                 )}
-                {user?.role === 'owner' && (
+                {showPartnerPortal && (
                   <span className="profile-card__role-badge profile-card__role-badge--owner">בעל חניה</span>
                 )}
                 <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
@@ -127,9 +126,12 @@ export default function Profile() {
             </div>
           )}
 
-          {user?.role === 'admin' && (
-            <div className="profile-admin-note card">
-              <p>דשבורד ניהול מערכת — בקרוב</p>
+          {showAdminPortal && (
+            <div className="profile-partner-link">
+              <Button variant="ghost" onClick={() => navigate('/admin')}>
+                <Icon icon={Shield} size={18} />
+                כניסה לדשבורד ניהול
+              </Button>
             </div>
           )}
         </aside>
@@ -142,9 +144,8 @@ export default function Profile() {
                 <button
                   key={item.title}
                   type="button"
-                  className={`settings-item ${item.comingSoon ? 'settings-item--soon' : ''}`}
+                  className="settings-item"
                   onClick={() => handleSetting(item)}
-                  disabled={item.comingSoon}
                 >
                   <span className="settings-item__icon">
                     <Icon icon={item.icon} size={18} className="app-icon--primary" />
@@ -153,11 +154,7 @@ export default function Profile() {
                     <span>{item.title}</span>
                     {item.subtitle && <small>{item.subtitle}</small>}
                   </div>
-                  {item.comingSoon ? (
-                    <span className="settings-item__soon">בקרוב</span>
-                  ) : (
-                    <Icon icon={ChevronLeft} size={18} className="settings-item__arrow app-icon--muted" />
-                  )}
+                  <Icon icon={ChevronLeft} size={18} className="settings-item__arrow app-icon--muted" />
                 </button>
               ))}
             </div>

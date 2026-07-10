@@ -314,7 +314,7 @@
   text-overflow: ellipsis;
 }
 
-.owner-week-schedule__event-booker {
+.owner-week-schedule__event-status {
   font-size: 0.58rem;
   line-height: 1.2;
   opacity: 0.8;
@@ -381,7 +381,7 @@
     font-size: 0.65rem;
   }
 
-  .owner-week-schedule__event-booker {
+  .owner-week-schedule__event-status {
     font-size: 0.62rem;
   }
 }

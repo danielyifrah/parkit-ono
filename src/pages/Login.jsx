@@ -95,6 +95,8 @@ export default function Login() {
 
         <p className="auth-switch">
           אין לך חשבון? <Link to="/register">הרשמה</Link>
+          {' · '}
+          <Link to="/register/owner">הירשם כבעל חניה</Link>
         </p>
 
         <div className="auth-demo card">

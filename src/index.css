@@ -312,6 +312,18 @@ img {
   margin-bottom: 24px;
 }
 
+.auth-title--with-subtitle {
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0 0 24px;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -328,6 +340,10 @@ img {
 .auth-switch a {
   color: var(--color-secondary);
   font-weight: 500;
+}
+
+.auth-switch--secondary {
+  margin-top: 10px;
 }
 
 .auth-demo {

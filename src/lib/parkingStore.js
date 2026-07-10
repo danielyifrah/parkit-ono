@@ -3,9 +3,9 @@ import { isSupabaseConfigured, supabase } from './supabaseClient';
 import {
   bookingFromRow,
   bookingToRow,
+  occupancyFromRow,
   parkingFromRow,
   parkingToRow,
-  profileFromRow,
 } from './supabaseMappers';
 import { calculateBookingPrice, getActualChargeMinutes, getElapsedMinutesFromStartedAt, toLocalDateStr } from './bookingPricing';
 import { getCancellationPreview } from './cancellationPolicy';
@@ -137,7 +137,7 @@ export async function init({ userId = null, force = false } = {}) {
     let bookings = [];
     let profilesById = {};
     if (userId) {
-      // RLS returns only the user's bookings + bookings on parkings they own
+      // Own bookings only (RLS). Occupancy on owned parkings comes without booker identity.
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*');
@@ -147,28 +147,26 @@ export async function init({ userId = null, force = false } = {}) {
         throw bookingsError;
       }
 
-      bookings = bookingsData || [];
+      const ownBookings = (bookingsData || []).map(bookingFromRow);
+      const ownIds = new Set(ownBookings.map((b) => b.id));
 
-      const bookerIds = [...new Set(bookings.map((row) => row.user_id).filter(Boolean))];
-      if (bookerIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name, phone, email')
-          .in('id', bookerIds);
+      const { data: occupancyData, error: occupancyError } = await supabase
+        .rpc('get_owner_parking_occupancy');
 
-        if (profilesError) {
-          console.error('Failed to load booker profiles', profilesError);
-        } else {
-          profilesById = Object.fromEntries(
-            (profilesData || []).map((row) => [row.id, profileFromRow(row)]),
-          );
-        }
+      if (occupancyError) {
+        console.error('Failed to load owner occupancy', occupancyError);
       }
+
+      const occupancyBookings = (occupancyData || [])
+        .filter((row) => !ownIds.has(row.id))
+        .map(occupancyFromRow);
+
+      bookings = [...ownBookings, ...occupancyBookings];
     }
 
     state = {
       parkings: (parkings || []).map(parkingFromRow),
-      bookings: bookings.map(bookingFromRow),
+      bookings,
       profilesById,
     };
     notify();
@@ -319,12 +317,9 @@ export function getOwnerUpcomingBookings(ownerId, { daysAhead = MAX_SEARCH_DAYS_
     ))
     .map((booking) => {
       const parking = findParking(booking.parkingId);
-      const booker = getProfileById(booking.userId);
       return {
         ...booking,
         parkingName: parking?.name || 'חניה',
-        bookerName: booker?.name || 'מזמין',
-        bookerPhone: booker?.phone || '',
       };
     })
     .sort((a, b) => {

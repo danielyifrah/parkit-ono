@@ -158,26 +158,6 @@
   color: var(--color-error);
 }
 
-.settings-item--soon {
-  cursor: default;
-  opacity: 0.85;
-}
-
-.settings-item--soon:hover {
-  background: transparent;
-}
-
-.settings-item__soon {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  padding: 3px 8px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
 .app-icon--danger {
   color: var(--color-error);
 }

@@ -11,12 +11,11 @@ export function profileFromRow(row) {
 }
 
 export function profileToRow(profile) {
+  // role is immutable from the client — set only at signup / by service role
   return {
-    id: profile.id,
     email: profile.email,
     name: profile.name,
     phone: profile.phone || '',
-    role: profile.role,
     avatar: profile.avatar,
     updated_at: new Date().toISOString(),
   };
@@ -110,6 +109,35 @@ export function bookingFromRow(row) {
     completedAt: row.completed_at,
     createdAt: row.created_at,
     review: row.review,
+  };
+}
+
+/** Occupancy row for parking owners — intentionally omits booker identity. */
+export function occupancyFromRow(row) {
+  const dateValue = row.date;
+  const date = typeof dateValue === 'string'
+    ? dateValue.split('T')[0]
+    : dateValue;
+
+  return {
+    id: row.id,
+    userId: null,
+    parkingId: row.parking_id,
+    date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    durationHours: 0,
+    durationMinutes: null,
+    totalPrice: 0,
+    paymentMethod: '',
+    status: row.status,
+    slotBlocked: row.slot_blocked,
+    holdStartedAt: row.hold_started_at,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+    review: null,
+    identityHidden: true,
   };
 }
 

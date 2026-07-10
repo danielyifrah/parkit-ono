@@ -5,9 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
-const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
-const HIDE_HEADER_ROUTES = ['/partner'];
-const HIDE_BOTTOM_NAV_ROUTES = ['/partner', '/partner/add', '/active', '/saved'];
+const AUTH_ROUTES = ['/login', '/register', '/register/owner', '/forgot-password'];
+const HIDE_HEADER_ROUTES = ['/partner', '/admin'];
+const HIDE_BOTTOM_NAV_ROUTES = ['/partner', '/partner/add', '/admin', '/active', '/saved'];
 
 const PAGE_TITLES = {
   '/active': 'חניה פעילה',
@@ -17,6 +17,7 @@ const PAGE_TITLES = {
   '/profile/payment-methods': 'אמצעי תשלום',
   '/support': 'מרכז תמיכה',
   '/partner/add': 'הוספת חניה',
+  '/admin': 'דשבורד ניהול',
 };
 
 function LayoutContent() {

@@ -67,6 +67,8 @@ const AUDIENCES = [
   {
     icon: Users,
     title: 'לנהגים',
+    ctaTo: '/register',
+    ctaLabel: 'הרשמה כנהג',
     items: [
       'חיפוש חניה ליד היעד — לא סיבובים מיותרים',
       'מחיר ברור לפני ההזמנה',
@@ -77,6 +79,8 @@ const AUDIENCES = [
   {
     icon: Building2,
     title: 'לבעלי חניות',
+    ctaTo: '/register/owner',
+    ctaLabel: 'הירשם כבעל חניה',
     items: [
       'הפכו מקום ריק להכנסה נוספת',
       'פרסום פשוט דרך פורטל השותפים',
@@ -264,6 +268,11 @@ export default function Landing() {
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
+                <Link to={audience.ctaTo} className="landing-audience__cta">
+                  <Button variant="secondary" size="sm" fullWidth>
+                    {audience.ctaLabel}
+                  </Button>
+                </Link>
               </article>
             ))}
           </div>
@@ -336,8 +345,8 @@ export default function Landing() {
             <Link to="/register">
               <Button size="lg">הרשמה חינם</Button>
             </Link>
-            <Link to="/login">
-              <Button variant="secondary" size="lg">יש לי כבר חשבון</Button>
+            <Link to="/register/owner">
+              <Button variant="secondary" size="lg">הירשם כבעל חניה</Button>
             </Link>
           </div>
         </div>
@@ -353,6 +362,7 @@ export default function Landing() {
           <div className="landing-footer__links">
             <Link to="/login">התחברות</Link>
             <Link to="/register">הרשמה</Link>
+            <Link to="/register/owner">הירשם כבעל חניה</Link>
           </div>
           <p className="landing-footer__copy">© {new Date().getFullYear()} Parkit. כל הזכויות שמורות.</p>
         </div>
