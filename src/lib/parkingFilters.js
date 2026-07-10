@@ -1,5 +1,5 @@
 import { FULL_DAY_MINUTES, toLocalDateStr } from './bookingPricing';
-import { getMaxDurationMinutes } from './availability';
+import { isParkingAvailableForSlot } from './availability';
 
 export const DEFAULT_FILTERS = {
   types: { private: true, public: true, office: true },
@@ -31,7 +31,7 @@ export const ARRIVAL_OPTIONS = [
 
 export const DURATION_OPTIONS = ['שעה', 'שעתיים', 'יום'];
 
-function durationLabelToMinutes(duration) {
+export function durationLabelToMinutes(duration) {
   switch (duration) {
     case 'שעתיים':
       return 120;
@@ -42,7 +42,7 @@ function durationLabelToMinutes(duration) {
   }
 }
 
-function getArrivalDateTime(arrival) {
+export function getArrivalDateTime(arrival) {
   const now = new Date();
 
   if (arrival === 'tomorrow-morning') {
@@ -61,14 +61,6 @@ function getArrivalDateTime(arrival) {
   };
 }
 
-function matchesDuration(parking, arrival, duration) {
-  if (duration === 'שעה') return true;
-
-  const requiredMinutes = durationLabelToMinutes(duration);
-  const { dateStr, startTime } = getArrivalDateTime(arrival);
-  const maxDuration = getMaxDurationMinutes(parking, dateStr, startTime);
-  return maxDuration >= requiredMinutes;
-}
 
 export function isFiltersActive(filters) {
   return (
@@ -97,24 +89,15 @@ export function isPanelActive(filters, panelId) {
   }
 }
 
-function matchesArrival(parking, arrival) {
-  if (arrival === 'now') return true;
-
-  const hours = parking.availabilityHours || '';
-
-  if (arrival === 'tomorrow-morning') {
-    return hours.includes('00:00') || hours.startsWith('07') || hours.startsWith('08');
-  }
-
-  if (arrival === 'evening') {
-    return hours.includes('23:59') || hours.includes('18:00') || hours.includes('22:00');
-  }
-
-  return true;
+function matchesSearchWindow(parking, arrival, duration, getConflictsForParking) {
+  const { dateStr, startTime } = getArrivalDateTime(arrival);
+  const durationMinutes = durationLabelToMinutes(duration);
+  const conflicts = getConflictsForParking ? getConflictsForParking(parking.id) : [];
+  return isParkingAvailableForSlot(parking, dateStr, startTime, durationMinutes, conflicts);
 }
 
-export function applyParkingFilters(allParkings, filters) {
-  let result = allParkings.filter((p) => p.available);
+export function applyParkingFilters(allParkings, filters, getConflictsForParking = null) {
+  let result = allParkings.filter((p) => p.available !== false && p.status === 'active');
 
   if (!filters.types.private) {
     result = result.filter((p) => p.type !== 'private');
@@ -134,8 +117,9 @@ export function applyParkingFilters(allParkings, filters) {
     result = result.filter((p) => p.rating >= filters.minRating);
   }
 
-  result = result.filter((p) => matchesArrival(p, filters.arrival));
-  result = result.filter((p) => matchesDuration(p, filters.arrival, filters.duration));
+  result = result.filter(
+    (p) => matchesSearchWindow(p, filters.arrival, filters.duration, getConflictsForParking),
+  );
 
   return result;
 }

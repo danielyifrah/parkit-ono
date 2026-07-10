@@ -60,6 +60,32 @@ export function getSchedulesForDate(parking, dateStr) {
   return normalizeScheduleSlots(weekly[getDayOfWeek(dateStr)]);
 }
 
+/** True once the owner has saved availability (new listings stay hidden until then). */
+export function hasOwnerConfiguredAvailability(parking) {
+  if (!parking?.availability) return false;
+  if (parking.availability.configured) return true;
+
+  const overrides = parking.availability.dateOverrides;
+  if (overrides && Object.keys(overrides).length > 0) return true;
+
+  const weekly = parking.availability.weekly;
+  if (weekly && Object.values(weekly).some((day) => day != null)) return true;
+
+  return false;
+}
+
+export function isParkingAvailableForSlot(
+  parking,
+  dateStr,
+  startTime,
+  durationMinutes,
+  extraReservations = [],
+) {
+  if (!parking || parking.status !== 'active' || parking.available === false) return false;
+  if (!hasOwnerConfiguredAvailability(parking)) return false;
+  return validateBookingSlot(parking, dateStr, startTime, durationMinutes, extraReservations).valid;
+}
+
 export function getBookedSlotsForDate(parking, dateStr) {
   return (parking?.availability?.bookedSlots || [])
     .filter((slot) => slot.date === dateStr)

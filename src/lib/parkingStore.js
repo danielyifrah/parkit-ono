@@ -7,6 +7,7 @@ import {
   addMinutesToTime,
   getBookingStartMs,
   getMaxExtensionMinutes,
+  hasOwnerConfiguredAvailability,
   normalizeTime,
   parseAvailabilityHours,
   timeToMinutes,
@@ -277,6 +278,31 @@ export function isParkingOccupied(parkingId, excludeBookingId = null) {
   );
 }
 
+/** Hide from public search while the spot is held or in active use. */
+export function isParkingPubliclyBlocked(parkingId) {
+  return state.bookings.some((b) => {
+    if (b.parkingId !== parkingId) return false;
+    if (b.status === 'active' || b.status === 'pending_arrival') return true;
+    if (b.status === 'saved' && b.slotBlocked) return true;
+    if (b.status === 'scheduled' && shouldEnterHoldPhase(b)) return true;
+    return false;
+  });
+}
+
+export function isParkingBookable(
+  parkingId,
+  dateStr,
+  startTime,
+  durationMinutes,
+  excludeBookingId = null,
+) {
+  const parking = findParking(parkingId);
+  if (!parking || isParkingPubliclyBlocked(parkingId)) return false;
+
+  const conflicts = getReservationConflicts(parkingId, excludeBookingId);
+  return isParkingAvailableForSlot(parking, dateStr, startTime, durationMinutes, conflicts);
+}
+
 /** True when another user (or session) holds the spot — excludes caller's pending arrival on same parking. */
 export function isParkingOccupiedByOther(parkingId, userId) {
   const ownPending = state.bookings.find(
@@ -289,7 +315,10 @@ export function isParkingOccupiedByOther(parkingId, userId) {
 
 export function getAvailableParkings() {
   return state.parkings.filter(
-    (p) => p.available !== false && p.status === 'active' && !isParkingOccupied(p.id),
+    (p) => p.available !== false
+      && p.status === 'active'
+      && hasOwnerConfiguredAvailability(p)
+      && !isParkingPubliclyBlocked(p.id),
   );
 }
 
@@ -364,7 +393,7 @@ export function createBooking({
   const parking = findParking(parkingId);
   if (!parking) return { ok: false, error: 'חניה לא נמצאה' };
 
-  if (isParkingOccupied(parkingId)) {
+  if (isParkingPubliclyBlocked(parkingId)) {
     return { ok: false, error: 'החניה תפוסה כרגע על ידי משתמש אחר.' };
   }
 
@@ -487,7 +516,6 @@ function updateBookedSlotRange(parkingId, bookingId, date, start, end) {
 }
 
 export function addParking(ownerId, form) {
-  const { start, end } = parseAvailabilityHours(form.availabilityHours);
   const id = nextId('p', state.parkings);
   const parking = {
     id,
@@ -508,8 +536,14 @@ export function addParking(ownerId, form) {
     images: [],
     lat: 32.07 + Math.random() * 0.03,
     lng: 34.77 + Math.random() * 0.03,
-    availabilityHours: form.availabilityHours || `${start} - ${end}`,
-    availability: monthAvailability(weeklySchedule(start, end)),
+    availabilityHours: 'טרם הוגדרה זמינות',
+    availability: {
+      weekly: {},
+      blockedDates: [],
+      bookedSlots: [],
+      dateOverrides: {},
+      configured: false,
+    },
     bookingsToday: 0,
     incomeToday: 0,
     covered: form.type !== 'public',
@@ -527,6 +561,7 @@ export function updateParkingAvailability(parkingId, availabilityHours) {
   const bookedSlots = parking.availability?.bookedSlots || [];
   parking.availabilityHours = availabilityHours;
   parking.availability = monthAvailability(weeklySchedule(start, end), [], bookedSlots);
+  parking.availability.configured = true;
   persistParkingChange(parking);
   return parking;
 }
@@ -555,6 +590,7 @@ export function updateParkingWeeklyAvailability(parkingId, weeklySlots) {
   parking.availability = {
     ...monthAvailability(normalizedWeekly, [], bookedSlots),
     dateOverrides: parking.availability?.dateOverrides || {},
+    configured: true,
   };
   parking.availabilityHours = 'זמינות משתנה לפי ימים';
   persistParkingChange(parking);
@@ -596,6 +632,7 @@ export function updateParkingUpcomingAvailability(parkingId, dayPlans) {
     blockedDates: [],
     bookedSlots,
     dateOverrides: existingOverrides,
+    configured: true,
   };
   parking.availabilityHours = 'זמינות לפי ימים קרובים';
   persistParkingChange(parking);

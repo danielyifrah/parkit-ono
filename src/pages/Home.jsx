@@ -36,6 +36,7 @@ export default function Home() {
     getScheduledBookingByUserId,
     getParkingById,
     cancelBooking,
+    getReservationConflicts,
     PRE_START_HOLD_MINUTES,
   } = useParking();
   const availableParkings = getAvailableParkings();
@@ -86,7 +87,7 @@ export default function Home() {
   }, [searchQuery, handleSearchChange, handlePlaceSelect, handleLocate, setSearch]);
 
   const filteredParkings = useMemo(() => {
-    let result = applyParkingFilters(availableParkings, filters);
+    let result = applyParkingFilters(availableParkings, filters, getReservationConflicts);
 
     if (searchLocation) {
       result = result
@@ -111,7 +112,7 @@ export default function Home() {
     }
 
     return result;
-  }, [searchQuery, searchLocation, filters, availableParkings]);
+  }, [searchQuery, searchLocation, filters, availableParkings, getReservationConflicts]);
 
   const hasActiveSearch = Boolean(searchLocation || searchQuery.trim());
   const hasActiveFilters = isFiltersActive(filters);
@@ -287,6 +288,7 @@ export default function Home() {
                 <ParkingCard
                   parking={selectedParking}
                   variant="overlay"
+                  availabilityLabel={filters.arrival === 'now' ? 'פנוי עכשיו' : 'זמין לחיפוש'}
                   onViewDetails={(id) => navigate(`/parking/${id}`)}
                 />
               </div>

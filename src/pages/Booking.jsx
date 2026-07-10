@@ -9,6 +9,7 @@ import {
   getAvailableUntilTime,
   getCurrentTimeStr,
   getScheduleForDate,
+  hasOwnerConfiguredAvailability,
   isStartTimeNow,
 } from '../lib/availability';
 import { calculateBookingPrice, toLocalDateStr, formatDurationLabel, MINIMUM_CHARGE_MINUTES } from '../lib/bookingPricing';
@@ -100,6 +101,18 @@ export default function Booking() {
     return (
       <div className="page">
         <div className="empty-state"><h2>חניה לא נמצאה</h2></div>
+      </div>
+    );
+  }
+
+  if (!hasOwnerConfiguredAvailability(parking) || parking.status !== 'active' || parking.available === false) {
+    return (
+      <div className="page">
+        <div className="empty-state card">
+          <h2>החניה אינה זמינה להזמנה</h2>
+          <p>ייתכן שבעל החניה עדיין לא הגדיר זמינות.</p>
+          <Button onClick={() => navigate('/')}>חזרה למפה</Button>
+        </div>
       </div>
     );
   }

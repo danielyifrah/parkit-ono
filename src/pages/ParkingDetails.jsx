@@ -1,8 +1,15 @@
+import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Clock, Image, ChevronRight, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
-import { getTodayTomorrowAvailability } from '../lib/availability';
+import {
+  getCurrentTimeStr,
+  getTodayTomorrowAvailability,
+  hasOwnerConfiguredAvailability,
+} from '../lib/availability';
+import { toLocalDateStr } from '../lib/bookingPricing';
+import { durationLabelToMinutes } from '../lib/parkingFilters';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import './ParkingDetails.css';
@@ -21,11 +28,25 @@ function formatDisplayDate(dateStr) {
 export default function ParkingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getParkingById, isParkingOccupied } = useParking();
+  const { user } = useAuth();
+  const {
+    getParkingById,
+    isParkingPubliclyBlocked,
+    isParkingBookable,
+  } = useParking();
   const parking = getParkingById(id);
   const todayTomorrowAvailability = parking ? getTodayTomorrowAvailability(parking) : [];
-  const occupied = isParkingOccupied(id);
-  const unavailable = !parking?.available || parking?.status !== 'active';
+  const isOwner = parking?.ownerId === user?.id;
+
+  const today = toLocalDateStr(new Date());
+  const now = getCurrentTimeStr();
+  const blocked = isParkingPubliclyBlocked(id);
+  const configured = parking ? hasOwnerConfiguredAvailability(parking) : false;
+  const inactive = !parking?.available || parking?.status !== 'active';
+  const bookableNow = useMemo(
+    () => isParkingBookable(id, today, now, durationLabelToMinutes('שעה')),
+    [id, today, now, isParkingBookable],
+  );
 
   if (!parking) {
     return (
@@ -37,6 +58,45 @@ export default function ParkingDetails() {
       </div>
     );
   }
+
+  if (!isOwner && (!configured || inactive)) {
+    return (
+      <div className="page">
+        <div className="empty-state">
+          <h2>החניה אינה זמינה כרגע</h2>
+          <p>ייתכן שבעל החניה עדיין לא הגדיר זמינות, או שהחניה אינה פעילה.</p>
+          <Button onClick={() => navigate('/')}>חזרה למפה</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const statusBadge = inactive ? (
+    <span className="badge badge--inactive">
+      <span className="badge__dot" />
+      לא פעילה
+    </span>
+  ) : !configured ? (
+    <span className="badge badge--inactive">
+      <span className="badge__dot" />
+      טרם הוגדרה זמינות
+    </span>
+  ) : blocked ? (
+    <span className="badge badge--error">
+      <span className="badge__dot" />
+      תפוסה כרגע
+    </span>
+  ) : bookableNow ? (
+    <span className="badge badge--success">
+      <span className="badge__dot" />
+      פנוי עכשיו
+    </span>
+  ) : (
+    <span className="badge badge--inactive">
+      <span className="badge__dot" />
+      לא זמין עכשיו
+    </span>
+  );
 
   return (
     <div className="page parking-details">
@@ -58,22 +118,7 @@ export default function ParkingDetails() {
           <div className="parking-details__content">
             <div className="parking-details__header">
               <div>
-                {unavailable ? (
-                  <span className="badge badge--inactive">
-                    <span className="badge__dot" />
-                    לא זמין
-                  </span>
-                ) : occupied ? (
-                  <span className="badge badge--error">
-                    <span className="badge__dot" />
-                    תפוס כרגע
-                  </span>
-                ) : (
-                  <span className="badge badge--success">
-                    <span className="badge__dot" />
-                    פנוי עכשיו
-                  </span>
-                )}
+                {statusBadge}
                 <h1 className="parking-details__title">{parking.name}</h1>
                 <p className="parking-details__address">
                   <Icon icon={MapPin} size={14} className="app-icon--muted" />
@@ -150,13 +195,17 @@ export default function ParkingDetails() {
               fullWidth
               size="lg"
               onClick={() => navigate(`/parking/${id}/book`)}
-              disabled={occupied || unavailable}
+              disabled={!bookableNow || inactive || !configured}
             >
-              {unavailable
-                ? 'החניה לא זמינה כרגע'
-                : occupied
-                  ? 'החניה תפוסה כרגע'
-                  : 'הזמן חניה'}
+              {!configured
+                ? 'יש להגדיר זמינות לפני הזמנה'
+                : inactive
+                  ? 'החניה לא פעילה'
+                  : blocked
+                    ? 'החניה תפוסה כרגע'
+                    : bookableNow
+                      ? 'הזמן חניה'
+                      : 'החניה לא זמינה עכשיו'}
             </Button>
           </div>
         </div>

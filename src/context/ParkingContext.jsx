@@ -88,6 +88,8 @@ export function ParkingProvider({ children }) {
     getActiveBookingByUserId: parkingStore.getActiveBookingByUserId,
     getReservationConflicts: parkingStore.getReservationConflicts,
     isParkingOccupied: parkingStore.isParkingOccupied,
+    isParkingPubliclyBlocked: parkingStore.isParkingPubliclyBlocked,
+    isParkingBookable: parkingStore.isParkingBookable,
     isParkingOccupiedByOther: parkingStore.isParkingOccupiedByOther,
     getSavedHoldRemainingMs: parkingStore.getSavedHoldRemainingMs,
     getActiveRemainingMs: parkingStore.getActiveRemainingMs,

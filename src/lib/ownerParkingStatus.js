@@ -4,6 +4,7 @@ import {
   getClosingMinutes,
   getCurrentTimeStr,
   getSchedulesForDate,
+  hasOwnerConfiguredAvailability,
   timeToMinutes,
 } from './availability';
 
@@ -54,6 +55,10 @@ export function getOwnerParkingStatus(parking, bookings, now = new Date()) {
 
   if (parking.status === 'inactive') {
     return { status: 'frozen', booking: null };
+  }
+
+  if (!hasOwnerConfiguredAvailability(parking)) {
+    return { status: 'unavailable', booking: null };
   }
 
   const activeBooking = findActiveBooking(parking.id, bookings);

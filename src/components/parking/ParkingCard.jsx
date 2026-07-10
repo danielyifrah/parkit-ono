@@ -26,6 +26,7 @@ export default function ParkingCard({
   onViewPerformance,
   onOpenSettings,
   showBookButton = true,
+  availabilityLabel = 'זמין לחיפוש',
 }) {
   const navigate = useNavigate();
   const { getOwnerParkingDisplayStatus } = useParking();
@@ -47,7 +48,7 @@ export default function ParkingCard({
           <div className="parking-card__overlay-top">
             <span className="badge badge--success">
               <span className="badge__dot" />
-              פנוי עכשיו
+              {availabilityLabel}
             </span>
             <span className="parking-card__rating">
               <Icon icon={Star} size={14} className="app-icon--primary" />
