@@ -257,10 +257,10 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
                     {(bookingsByDate[day.date] || []).map((booking) => {
                       const top = ((booking.startMin - DAY_START_MIN) / 60) * HOUR_HEIGHT;
                       const height = Math.max(
-                        40,
+                        44,
                         ((booking.endMin - booking.startMin) / 60) * HOUR_HEIGHT - 3,
                       );
-                      const showExtra = height >= 52;
+                      const showBooker = height >= 64;
 
                       return (
                         <article
@@ -273,22 +273,17 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
                             borderColor: booking.color.border,
                             color: booking.color.text,
                           }}
-                          title={`${booking.bookerName} · ${booking.startTime}–${booking.endTime} · ${booking.parkingName}`}
+                          title={`${booking.parkingName} · ${booking.startTime}–${booking.endTime} · ${booking.bookerName} · ${STATUS_LABELS[booking.status] || booking.status}`}
                         >
                           <strong className="owner-week-schedule__event-name">
-                            {booking.bookerName}
+                            {booking.parkingName}
                           </strong>
                           <span className="owner-week-schedule__event-time" dir="ltr">
                             {booking.startTime}–{booking.endTime}
                           </span>
-                          {showExtra && selectedParkingId === 'all' && parkings.length > 1 && (
-                            <span className="owner-week-schedule__event-parking">
-                              {booking.parkingName}
-                            </span>
-                          )}
-                          {showExtra && (
-                            <span className="owner-week-schedule__event-status">
-                              {STATUS_LABELS[booking.status] || booking.status}
+                          {showBooker && (
+                            <span className="owner-week-schedule__event-booker">
+                              {booking.bookerName}
                             </span>
                           )}
                         </article>
