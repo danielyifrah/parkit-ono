@@ -4,6 +4,8 @@ import { MapPin, Star, Clock, Image, ChevronRight, CalendarDays } from 'lucide-r
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
+import { useAppSettings } from '../context/AppSettingsContext';
+import { isAdmin } from '../lib/roles';
 import {
   getTodayTomorrowAvailability,
   hasOwnerConfiguredAvailability,
@@ -33,6 +35,7 @@ export default function ParkingDetails() {
   const location = useLocation();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
+  const { bookingsDisabled, message: maintenanceMessage } = useAppSettings();
   const {
     getParkingById,
     isParkingPubliclyBlocked,
@@ -40,6 +43,8 @@ export default function ParkingDetails() {
   } = useParking();
   const parking = getParkingById(id);
   const isOwner = parking?.ownerId === user?.id;
+  const adminUser = isAdmin(user);
+  const bookingBlocked = bookingsDisabled || adminUser;
 
   const search = location.state?.search;
   const searchDate = search?.dateStr ?? toLocalDateStr(new Date());
@@ -221,21 +226,33 @@ export default function ParkingDetails() {
               </div>
             </div>
 
+            {bookingBlocked && (
+              <p className="parking-details__maintenance">
+                {adminUser
+                  ? 'משתמש מנהל אינו מבצע הזמנות. ניהול המערכת זמין בדשבורד הניהול.'
+                  : maintenanceMessage}
+              </p>
+            )}
+
             <Button
               fullWidth
               size="lg"
               onClick={handleBook}
-              disabled={!bookableForSearch || inactive || !configured}
+              disabled={bookingBlocked || !bookableForSearch || inactive || !configured}
             >
-              {!configured
-                ? 'יש להגדיר זמינות לפני הזמנה'
-                : inactive
-                  ? 'החניה לא פעילה'
-                  : blockedForSearch
-                    ? 'החניה תפוסה כרגע'
-                    : bookableForSearch
-                      ? 'הזמן חניה'
-                      : 'החניה לא זמינה בזמן שנבחר'}
+              {adminUser
+                ? 'הזמנה אינה זמינה למנהל'
+                : bookingsDisabled
+                  ? 'האפליקציה מושבתת זמנית'
+                  : !configured
+                    ? 'יש להגדיר זמינות לפני הזמנה'
+                    : inactive
+                      ? 'החניה לא פעילה'
+                      : blockedForSearch
+                        ? 'החניה תפוסה כרגע'
+                        : bookableForSearch
+                          ? 'הזמן חניה'
+                          : 'החניה לא זמינה בזמן שנבחר'}
             </Button>
           </div>
         </div>

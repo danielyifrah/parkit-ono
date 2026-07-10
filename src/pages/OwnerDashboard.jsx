@@ -4,7 +4,9 @@ import { Plus, LifeBuoy, User, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, F
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
+import { useAppSettings } from '../context/AppSettingsContext';
 import { getOwnerStats } from '../data/mockData';
+import { APP_DISABLED_OWNER_ERROR } from '../lib/appSettings';
 import { toLocalDateStr } from '../lib/bookingPricing';
 import { formatDisplayDate, getDayName, getSchedulesForDate, normalizeTime } from '../lib/availability';
 import {
@@ -110,6 +112,7 @@ export default function OwnerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
+  const { bookingsDisabled, message: maintenanceMessage } = useAppSettings();
   const {
     getParkingsByOwnerId,
     getOwnerParkingDisplayStatus,
@@ -201,6 +204,10 @@ export default function OwnerDashboard() {
 
   const handleSaveSettings = async () => {
     if (!settingsParking || settingsSaving) return;
+    if (bookingsDisabled) {
+      setSettingsError(APP_DISABLED_OWNER_ERROR);
+      return;
+    }
 
     const validationError = validateOwnerParkingSettings(settingsForm);
     if (validationError) {
@@ -226,6 +233,10 @@ export default function OwnerDashboard() {
 
   const handleSaveAvailability = async () => {
     if (!availabilityParking || availabilitySaving) return;
+    if (bookingsDisabled) {
+      setAvailabilityError(APP_DISABLED_OWNER_ERROR);
+      return;
+    }
 
     const validationError = validateAvailabilityDayPlans(availabilityDays);
     if (validationError) {
@@ -314,6 +325,10 @@ export default function OwnerDashboard() {
 
   const handleToggleFreeze = () => {
     if (!settingsParking) return;
+    if (bookingsDisabled) {
+      setSettingsError(APP_DISABLED_OWNER_ERROR);
+      return;
+    }
     const nextStatus = settingsParking.status === 'active' ? 'inactive' : 'active';
     setParkingStatus(settingsParking.id, nextStatus);
     setSettingsParking(null);
@@ -321,6 +336,10 @@ export default function OwnerDashboard() {
 
   const handleRemoveParking = () => {
     if (!settingsParking) return;
+    if (bookingsDisabled) {
+      setSettingsError(APP_DISABLED_OWNER_ERROR);
+      return;
+    }
     const shouldDelete = window.confirm(`להסיר את "${settingsParking.name}"? לא ניתן לבטל פעולה זו.`);
     if (!shouldDelete) return;
 
@@ -336,7 +355,11 @@ export default function OwnerDashboard() {
   return (
     <div className="owner-dashboard">
       <header className="owner-dashboard__header">
-        <Button size="sm" onClick={() => navigate('/partner/add')}>
+        <Button
+          size="sm"
+          onClick={() => navigate('/partner/add')}
+          disabled={bookingsDisabled}
+        >
           <Icon icon={Plus} size={16} className="app-icon--white" />
           הוסף חניה
         </Button>
@@ -356,6 +379,12 @@ export default function OwnerDashboard() {
           </button>
         </div>
       </header>
+
+      {bookingsDisabled && (
+        <div className="owner-dashboard__maintenance" role="status">
+          {maintenanceMessage}
+        </div>
+      )}
 
       <div className="owner-dashboard__content page">
         <section className="owner-dashboard__section">

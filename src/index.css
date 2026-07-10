@@ -278,6 +278,10 @@ img {
   padding: 32px;
 }
 
+.auth-back {
+  margin-bottom: 20px;
+}
+
 .auth-logo {
   display: flex;
   align-items: center;

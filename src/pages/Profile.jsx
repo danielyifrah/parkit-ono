@@ -42,11 +42,18 @@ export default function Profile() {
   const showPartnerPortal = isOwner(user);
   const showAdminPortal = isAdmin(user);
 
-  const generalSettings = generalSettingsBase.map((item) => (
+  const generalSettings = (showAdminPortal
+    ? generalSettingsBase.filter((item) => item.action === 'security')
+    : generalSettingsBase
+  ).map((item) => (
     item.action === 'currency'
       ? { ...item, subtitle: currencyMeta.label }
       : item
   ));
+
+  const visibleAccountActions = showAdminPortal
+    ? accountActions.filter((item) => item.danger)
+    : accountActions;
 
   const handleAction = (item) => {
     if (item.danger) {
@@ -90,23 +97,27 @@ export default function Profile() {
                 {showPartnerPortal && (
                   <span className="profile-card__role-badge profile-card__role-badge--owner">בעל חניה</span>
                 )}
-                <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
-                  <Icon icon={Pencil} size={14} />
-                  עריכת פרופיל
-                </Button>
+                {!showAdminPortal && (
+                  <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+                    <Icon icon={Pencil} size={14} />
+                    עריכת פרופיל
+                  </Button>
+                )}
               </div>
             </div>
-            <div className="profile-card__stats">
-              <div className="profile-card__stat">
-                <span className="profile-card__stat-label">חניות שמורות</span>
-                <span className="profile-card__stat-value">{stats.savedParkings}</span>
+            {!showAdminPortal && (
+              <div className="profile-card__stats">
+                <div className="profile-card__stat">
+                  <span className="profile-card__stat-label">חניות שמורות</span>
+                  <span className="profile-card__stat-value">{stats.savedParkings}</span>
+                </div>
+                <div className="profile-card__stat-divider" />
+                <div className="profile-card__stat">
+                  <span className="profile-card__stat-label">חניות שהושלמו</span>
+                  <span className="profile-card__stat-value">{stats.completedParkings}</span>
+                </div>
               </div>
-              <div className="profile-card__stat-divider" />
-              <div className="profile-card__stat">
-                <span className="profile-card__stat-label">חניות שהושלמו</span>
-                <span className="profile-card__stat-value">{stats.completedParkings}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="profile-footer desktop-only">
@@ -163,7 +174,7 @@ export default function Profile() {
           <div className="profile-settings-col">
             <h3 className="settings-group-title">חשבון ופעולות</h3>
             <div className="settings-group card">
-              {accountActions.map((item) => (
+              {visibleAccountActions.map((item) => (
                 <button
                   key={item.title}
                   type="button"

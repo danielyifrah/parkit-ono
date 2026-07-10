@@ -1,16 +1,25 @@
 import './BottomNav.css';
 import { NavLink } from 'react-router-dom';
-import { Home, Clock, User } from 'lucide-react';
+import { Home, Clock, User, Shield } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { isAdmin } from '../../lib/roles';
 import Icon from '../ui/Icon';
 
-// סדר RTL: ימין → שמאל  |  בית | היסטוריה | פרופיל
-const navItems = [
+const driverNavItems = [
   { to: '/', label: 'בית', icon: Home, end: true },
   { to: '/history', label: 'היסטוריה', icon: Clock },
   { to: '/profile', label: 'פרופיל', icon: User },
 ];
 
+const adminNavItems = [
+  { to: '/admin', label: 'ניהול', icon: Shield, end: false },
+  { to: '/profile', label: 'חשבון', icon: User },
+];
+
 export default function BottomNav() {
+  const { user } = useAuth();
+  const navItems = isAdmin(user) ? adminNavItems : driverNavItems;
+
   return (
     <nav className="bottom-nav" aria-label="ניווט ראשי">
       {navItems.map((item) => (

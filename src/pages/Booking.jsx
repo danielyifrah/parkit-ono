@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
+import { useAppSettings } from '../context/AppSettingsContext';
+import { isAdmin } from '../lib/roles';
 import {
   validateBookingSlot,
   getMaxDurationMinutes,
@@ -29,6 +31,7 @@ export default function Booking() {
   const location = useLocation();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
+  const { bookingsDisabled, message: maintenanceMessage } = useAppSettings();
   const {
     getParkingById,
     createBooking,
@@ -101,6 +104,22 @@ export default function Booking() {
       setArrivalModalOpen(true);
     }
   }, [user?.id, id, getPendingArrivalBookingByUserId]);
+
+  if (isAdmin(user)) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (bookingsDisabled) {
+    return (
+      <div className="page booking-page">
+        <div className="card" style={{ padding: 24 }}>
+          <h2 style={{ marginTop: 0 }}>האפליקציה מושבתת זמנית</h2>
+          <p>{maintenanceMessage}</p>
+          <Button onClick={() => navigate('/')}>חזרה למפה</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!parking) {
     return (

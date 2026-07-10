@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { ParkingProvider } from './context/ParkingContext';
 import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
+import { AppSettingsProvider } from './context/AppSettingsContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import BookingSessionGuard from './components/BookingSessionGuard';
@@ -25,7 +26,13 @@ import PaymentMethods from './pages/PaymentMethods';
 import Support from './pages/Support';
 import OwnerDashboard from './pages/OwnerDashboard';
 import AddParking from './pages/AddParking';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminParkings from './pages/admin/AdminParkings';
+import AdminBookings from './pages/admin/AdminBookings';
+import AdminActivity from './pages/admin/AdminActivity';
+import AdminSettings from './pages/admin/AdminSettings';
 
 function AppRoutes() {
   const { loading } = useAuth();
@@ -39,61 +46,70 @@ function AppRoutes() {
   }
 
   return (
-    <ParkingProvider>
-      <PaymentMethodsProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route element={<BookingSessionGuard />}>
-            {/* Public routes inside layout */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/register/owner" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+    <AppSettingsProvider>
+      <ParkingProvider>
+        <PaymentMethodsProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route element={<BookingSessionGuard />}>
+              {/* Public routes inside layout */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/register/owner" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Protected routes */}
-            <Route path="/" element={<HomeRoute />} />
-            <Route path="/parking/:id" element={<ProtectedRoute><ParkingDetails /></ProtectedRoute>} />
-            <Route path="/parking/:id/book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
-            <Route path="/saved" element={<ProtectedRoute><SavedParking /></ProtectedRoute>} />
-            <Route path="/active" element={<ProtectedRoute><ActiveParking /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-            <Route path="/history/:id" element={<ProtectedRoute><BookingHistoryDetails /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/profile/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
-            <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-            <Route
-              path="/partner"
-              element={(
-                <RoleRoute roles={[USER_ROLES.OWNER]}>
-                  <OwnerDashboard />
-                </RoleRoute>
-              )}
-            />
-            <Route
-              path="/partner/add"
-              element={(
-                <RoleRoute roles={[USER_ROLES.OWNER]}>
-                  <AddParking />
-                </RoleRoute>
-              )}
-            />
-            <Route
-              path="/admin"
-              element={(
-                <RoleRoute roles={[USER_ROLES.ADMIN]}>
-                  <AdminDashboard />
-                </RoleRoute>
-              )}
-            />
+              {/* Protected routes */}
+              <Route path="/" element={<HomeRoute />} />
+              <Route path="/parking/:id" element={<ProtectedRoute><ParkingDetails /></ProtectedRoute>} />
+              <Route path="/parking/:id/book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+              <Route path="/saved" element={<ProtectedRoute><SavedParking /></ProtectedRoute>} />
+              <Route path="/active" element={<ProtectedRoute><ActiveParking /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+              <Route path="/history/:id" element={<ProtectedRoute><BookingHistoryDetails /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
+              <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+              <Route
+                path="/partner"
+                element={(
+                  <RoleRoute roles={[USER_ROLES.OWNER]}>
+                    <OwnerDashboard />
+                  </RoleRoute>
+                )}
+              />
+              <Route
+                path="/partner/add"
+                element={(
+                  <RoleRoute roles={[USER_ROLES.OWNER]}>
+                    <AddParking />
+                  </RoleRoute>
+                )}
+              />
+              <Route
+                path="/admin"
+                element={(
+                  <RoleRoute roles={[USER_ROLES.ADMIN]}>
+                    <AdminLayout />
+                  </RoleRoute>
+                )}
+              >
+                <Route index element={<AdminOverview />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="parkings" element={<AdminParkings />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="activity" element={<AdminActivity />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      </PaymentMethodsProvider>
-    </ParkingProvider>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+        </PaymentMethodsProvider>
+      </ParkingProvider>
+    </AppSettingsProvider>
   );
 }
 

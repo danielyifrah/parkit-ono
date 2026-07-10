@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useParking } from '../context/ParkingContext';
+import { useAppSettings } from '../context/AppSettingsContext';
 import { validateAddParkingForm } from '../lib/parkingFormValidation';
+import { APP_DISABLED_OWNER_ERROR } from '../lib/appSettings';
 import Button from '../components/ui/Button';
 import Input, { Textarea, Select } from '../components/ui/Input';
 import Icon from '../components/ui/Icon';
@@ -12,6 +14,7 @@ export default function AddParking() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addParking } = useParking();
+  const { bookingsDisabled, message: maintenanceMessage } = useAppSettings();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +37,11 @@ export default function AddParking() {
     e.preventDefault();
     setError('');
 
+    if (bookingsDisabled) {
+      setError(APP_DISABLED_OWNER_ERROR);
+      return;
+    }
+
     const validationError = validateAddParkingForm(form);
     if (validationError) {
       setError(validationError);
@@ -43,7 +51,7 @@ export default function AddParking() {
     setSubmitting(true);
 
     try {
-      addParking(user.id, {
+      const created = addParking(user.id, {
         ...form,
         name: form.name.trim(),
         address: form.address.trim(),
@@ -51,12 +59,31 @@ export default function AddParking() {
         description: form.description.trim(),
         availabilityHours: form.availabilityHours.trim(),
       });
+      if (!created) {
+        setError(APP_DISABLED_OWNER_ERROR);
+        return;
+      }
       setSuccess(true);
       setTimeout(() => navigate('/partner'), 2000);
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (bookingsDisabled) {
+    return (
+      <div className="page add-parking-page">
+        <button type="button" className="page-back" onClick={() => navigate('/partner')}>
+          <Icon icon={ChevronRight} size={18} />
+          חזרה לדשבורד
+        </button>
+        <div className="card" style={{ padding: 24 }}>
+          <h2 style={{ marginTop: 0 }}>לא ניתן להוסיף חניה כרגע</h2>
+          <p>{maintenanceMessage}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page add-parking-page">

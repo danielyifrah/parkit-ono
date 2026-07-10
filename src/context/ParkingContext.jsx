@@ -111,6 +111,8 @@ export function ParkingProvider({ children }) {
     confirmArrivalOnWay: parkingStore.confirmArrivalOnWay,
     cancelBooking: parkingStore.cancelBooking,
     cancelSavedBooking: parkingStore.cancelSavedBooking,
+    adminCancelBooking: parkingStore.adminCancelBooking,
+    adminRefundBooking: parkingStore.adminRefundBooking,
     startBooking: parkingStore.startBooking,
     extendActiveBooking: parkingStore.extendActiveBooking,
     completeBooking: parkingStore.completeBooking,

@@ -100,6 +100,17 @@
   text-align: start;
 }
 
+.parking-details__maintenance {
+  margin: 0 0 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: #FFF7ED;
+  border: 1px solid #FDBA74;
+  color: #9A3412;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
 .parking-details__availability {
   display: flex;
   align-items: center;

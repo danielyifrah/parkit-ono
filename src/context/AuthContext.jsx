@@ -3,10 +3,12 @@ import { getUserByEmail } from '../data/mockData';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { profileFromRow, profileToRow } from '../lib/supabaseMappers';
 import { isAdmin, isDriver, isOwner, USER_ROLES } from '../lib/roles';
+import { findLocalProfileByEmail } from '../lib/adminStore';
 
 const DEMO_PASSWORD = 'demo1234';
 const AuthContext = createContext(null);
 const CREDENTIALS_KEY = 'parkit_credentials';
+const SUSPENDED_ERROR = 'החשבון הושעה. לפרטים נוספים פנו לתמיכה.';
 
 function hydrateUser(savedUser) {
   if (!savedUser) return null;
@@ -67,6 +69,14 @@ async function fetchProfileByAuthUser(authUser) {
   return profileFromRow(data);
 }
 
+async function rejectIfSuspended(profile) {
+  if (!profile?.suspended) return null;
+  if (isSupabaseConfigured()) {
+    await supabase.auth.signOut();
+  }
+  return SUSPENDED_ERROR;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(isSupabaseConfigured());
@@ -81,7 +91,23 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured()) {
       const saved = localStorage.getItem('parkit_user');
-      setUser(saved ? hydrateUser(JSON.parse(saved)) : null);
+      const hydrated = saved ? hydrateUser(JSON.parse(saved)) : null;
+      if (hydrated) {
+        findLocalProfileByEmail(hydrated.email).then((adminProfile) => {
+          if (adminProfile?.suspended) {
+            localStorage.removeItem('parkit_user');
+            setUser(null);
+          } else {
+            setUser({
+              ...hydrated,
+              suspended: Boolean(adminProfile?.suspended),
+            });
+          }
+          setLoading(false);
+        });
+        return undefined;
+      }
+      setUser(null);
       setLoading(false);
       return undefined;
     }
@@ -92,7 +118,12 @@ export function AuthProvider({ children }) {
       if (!active) return;
       if (session?.user) {
         const profile = await fetchProfileByAuthUser(session.user);
-        setUser(profile);
+        if (profile?.suspended) {
+          await supabase.auth.signOut();
+          setUser(null);
+        } else {
+          setUser(profile);
+        }
       }
       setLoading(false);
     }).catch(() => {
@@ -103,7 +134,12 @@ export function AuthProvider({ children }) {
       if (!active) return;
       if (session?.user) {
         const profile = await fetchProfileByAuthUser(session.user);
-        setUser(profile);
+        if (profile?.suspended) {
+          await supabase.auth.signOut();
+          setUser(null);
+        } else {
+          setUser(profile);
+        }
       } else {
         setUser(null);
       }
@@ -123,9 +159,14 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'אימייל או סיסמה שגויים' };
       }
 
+      const adminProfile = await findLocalProfileByEmail(email);
+      if (adminProfile?.suspended) {
+        return { success: false, error: SUSPENDED_ERROR };
+      }
+
       const found = getUserByEmail(email);
       if (found) {
-        persistUser({ ...found });
+        persistUser({ ...found, ...(adminProfile || {}) });
         return { success: true };
       }
 
@@ -137,16 +178,26 @@ export function AuthProvider({ children }) {
           phone: '',
           role: USER_ROLES.DRIVER,
           avatar: null,
+          suspended: false,
         });
         return { success: true };
       }
       return { success: false, error: 'אימייל או סיסמה שגויים' };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       return { success: false, error: 'אימייל או סיסמה שגויים' };
     }
+
+    if (data?.user) {
+      const profile = await fetchProfileByAuthUser(data.user);
+      const suspendedError = await rejectIfSuspended(profile);
+      if (suspendedError) {
+        return { success: false, error: suspendedError };
+      }
+    }
+
     return { success: true };
   }, [persistUser]);
 

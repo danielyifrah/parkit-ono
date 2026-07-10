@@ -21,6 +21,11 @@ import {
   timeToMinutes,
   validateBookingSlot,
 } from './availability';
+import {
+  APP_DISABLED_BOOKING_ERROR,
+  APP_DISABLED_OWNER_ERROR,
+  isBookingsDisabled,
+} from './appSettings';
 
 const STORAGE_KEY = 'parkit_store_v2';
 export const HOLD_MINUTES = 10;
@@ -475,6 +480,10 @@ export function createBooking({
   paymentMethod = 'כרטיס אשראי',
   immediate = false,
 }) {
+  if (isBookingsDisabled()) {
+    return { ok: false, error: APP_DISABLED_BOOKING_ERROR };
+  }
+
   const parking = findParking(parkingId);
   if (!parking) return { ok: false, error: 'חניה לא נמצאה' };
 
@@ -588,6 +597,49 @@ export function cancelBooking(bookingId, userId) {
   return { ok: true, cancellationFee: preview.fee };
 }
 
+/** Admin cancel — works for open sessions; always full refund (no cancellation fee). */
+export function adminCancelBooking(bookingId) {
+  const booking = findBooking(bookingId);
+  if (!booking) return { ok: false, error: 'הזמנה לא נמצאה' };
+
+  const cancellable = ['scheduled', 'saved', 'pending_arrival', 'active'];
+  if (!cancellable.includes(booking.status)) {
+    return { ok: false, error: 'לא ניתן לבטל הזמנה בסטטוס זה. להזמנה שהושלמה ניתן לסמן החזר.' };
+  }
+
+  if (booking.slotBlocked) {
+    removeBookedSlot(booking.parkingId, bookingId);
+  }
+
+  booking.status = 'cancelled';
+  booking.cancellationFee = 0;
+  booking.slotBlocked = false;
+  booking.refunded = true;
+  booking.refundedAt = new Date().toISOString();
+  persistBookingChange(booking);
+  return { ok: true, booking };
+}
+
+/** Mark a completed (or already cancelled) booking as fully refunded. */
+export function adminRefundBooking(bookingId) {
+  const booking = findBooking(bookingId);
+  if (!booking) return { ok: false, error: 'הזמנה לא נמצאה' };
+
+  if (booking.refunded) {
+    return { ok: false, error: 'כבר סומן החזר להזמנה זו' };
+  }
+
+  if (!['completed', 'cancelled'].includes(booking.status)) {
+    return { ok: false, error: 'החזר זמין להזמנות שהושלמו או בוטלו. להזמנה פעילה יש לבטל תחילה.' };
+  }
+
+  booking.refunded = true;
+  booking.refundedAt = new Date().toISOString();
+  booking.cancellationFee = 0;
+  persistBookingChange(booking);
+  return { ok: true, booking };
+}
+
 /** @deprecated use cancelBooking */
 export function cancelSavedBooking(bookingId, userId) {
   return cancelBooking(bookingId, userId);
@@ -604,6 +656,8 @@ function updateBookedSlotRange(parkingId, bookingId, date, start, end) {
 }
 
 export function addParking(ownerId, form) {
+  if (isBookingsDisabled()) return null;
+
   const id = nextId('p', state.parkings);
   const parking = {
     id,
@@ -643,6 +697,7 @@ export function addParking(ownerId, form) {
 }
 
 export function updateParkingAvailability(parkingId, availabilityHours) {
+  if (isBookingsDisabled()) return null;
   const parking = findParking(parkingId);
   if (!parking) return null;
   const { start, end } = parseAvailabilityHours(availabilityHours);
@@ -655,6 +710,7 @@ export function updateParkingAvailability(parkingId, availabilityHours) {
 }
 
 export function updateParkingWeeklyAvailability(parkingId, weeklySlots) {
+  if (isBookingsDisabled()) return null;
   const parking = findParking(parkingId);
   if (!parking) return null;
 
@@ -686,6 +742,7 @@ export function updateParkingWeeklyAvailability(parkingId, weeklySlots) {
 }
 
 export function updateParkingUpcomingAvailability(parkingId, dayPlans) {
+  if (isBookingsDisabled()) return null;
   const parking = findParking(parkingId);
   if (!parking) return null;
 
@@ -727,7 +784,8 @@ export function updateParkingUpcomingAvailability(parkingId, dayPlans) {
   return parking;
 }
 
-export function updateParkingDetails(parkingId, updates) {
+export function updateParkingDetails(parkingId, updates, { bypassAppDisabled = false } = {}) {
+  if (!bypassAppDisabled && isBookingsDisabled()) return null;
   const parking = findParking(parkingId);
   if (!parking) return null;
 
@@ -746,7 +804,8 @@ export function updateParkingDetails(parkingId, updates) {
   return parking;
 }
 
-export function setParkingStatus(parkingId, status) {
+export function setParkingStatus(parkingId, status, { bypassAppDisabled = false } = {}) {
+  if (!bypassAppDisabled && isBookingsDisabled()) return null;
   const parking = findParking(parkingId);
   if (!parking) return null;
   if (!['active', 'inactive'].includes(status)) return null;
@@ -757,7 +816,11 @@ export function setParkingStatus(parkingId, status) {
   return parking;
 }
 
-export function removeParking(parkingId) {
+export function removeParking(parkingId, { bypassAppDisabled = false } = {}) {
+  if (!bypassAppDisabled && isBookingsDisabled()) {
+    return { ok: false, error: APP_DISABLED_OWNER_ERROR };
+  }
+
   const parking = findParking(parkingId);
   if (!parking) return { ok: false };
 

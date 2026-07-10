@@ -7,6 +7,9 @@ export function profileFromRow(row) {
     phone: row.phone,
     role: row.role,
     avatar: row.avatar,
+    suspended: Boolean(row.suspended),
+    suspendedAt: row.suspended_at || null,
+    suspendedReason: row.suspended_reason || '',
   };
 }
 
@@ -109,6 +112,9 @@ export function bookingFromRow(row) {
     completedAt: row.completed_at,
     createdAt: row.created_at,
     review: row.review,
+    refunded: Boolean(row.refunded),
+    refundedAt: row.refunded_at || null,
+    cancellationFee: row.cancellation_fee != null ? Number(row.cancellation_fee) : undefined,
   };
 }
 
@@ -198,5 +204,7 @@ export function bookingToRow(booking) {
     completed_at: booking.completedAt,
     created_at: booking.createdAt,
     review: booking.review,
+    refunded: Boolean(booking.refunded),
+    refunded_at: booking.refundedAt || null,
   };
 }

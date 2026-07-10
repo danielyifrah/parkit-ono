@@ -2,12 +2,14 @@ import { Outlet, useLocation, matchPath } from 'react-router-dom';
 import { HeaderProvider } from '../../context/HeaderContext';
 import { GoogleMapsProvider } from '../../context/GoogleMapsContext';
 import { useAuth } from '../../context/AuthContext';
+import AppDisabledBanner from '../AppDisabledBanner';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
 const AUTH_ROUTES = ['/login', '/register', '/register/owner', '/forgot-password'];
-const HIDE_HEADER_ROUTES = ['/partner', '/admin'];
-const HIDE_BOTTOM_NAV_ROUTES = ['/partner', '/partner/add', '/admin', '/active', '/saved'];
+const HIDE_HEADER_PREFIXES = ['/partner', '/admin'];
+const HIDE_BOTTOM_NAV_PREFIXES = ['/partner', '/admin'];
+const HIDE_BOTTOM_NAV_EXACT = ['/active', '/saved'];
 
 const PAGE_TITLES = {
   '/active': 'חניה פעילה',
@@ -20,13 +22,19 @@ const PAGE_TITLES = {
   '/admin': 'דשבורד ניהול',
 };
 
+function matchesPrefix(pathname, prefixes) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function LayoutContent() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const isAuthPage = AUTH_ROUTES.includes(location.pathname);
   const isLanding = location.pathname === '/' && !isAuthenticated;
-  const hideHeader = HIDE_HEADER_ROUTES.includes(location.pathname) || isLanding;
-  const hideBottomNav = HIDE_BOTTOM_NAV_ROUTES.includes(location.pathname) || isLanding;
+  const hideHeader = matchesPrefix(location.pathname, HIDE_HEADER_PREFIXES) || isLanding;
+  const hideBottomNav = matchesPrefix(location.pathname, HIDE_BOTTOM_NAV_PREFIXES)
+    || HIDE_BOTTOM_NAV_EXACT.includes(location.pathname)
+    || isLanding;
   const showSearch = location.pathname === '/' && isAuthenticated;
   const isHome = location.pathname === '/' && isAuthenticated;
   const bookingMatch = matchPath('/parking/:id/book', location.pathname);
@@ -48,6 +56,7 @@ function LayoutContent() {
       {!hideHeader && (
         <Header showSearch={showSearch} title={title} sessionLocked={sessionLocked} />
       )}
+      <AppDisabledBanner />
       <main className={`app-main ${hideBottomNav ? 'app-main--no-bottom-nav' : ''} ${isHome ? 'app-main--home' : ''}`}>
         <Outlet />
       </main>

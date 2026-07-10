@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { USER_ROLES } from '../lib/roles';
 import Button from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
 import Input from '../components/ui/Input';
 
 export default function Register() {
@@ -44,6 +46,10 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card card">
+        <Link to="/" className="page-back auth-back">
+          <Icon icon={ChevronRight} size={18} />
+          חזרה לדף הנחיתה
+        </Link>
         <div className="auth-logo">
           <span className="auth-logo-icon">P</span>
           <span className="auth-logo-text">Parkit</span>
