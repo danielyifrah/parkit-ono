@@ -81,6 +81,7 @@ export function ParkingProvider({ children }) {
     getBookingsByUserId: parkingStore.getBookingsByUserId,
     getBookingById: parkingStore.getBookingById,
     getParkingsByOwnerId: parkingStore.getParkingsByOwnerId,
+    getOwnerParkingDisplayStatus: parkingStore.getOwnerParkingDisplayStatus,
     getSavedBookingByUserId: parkingStore.getSavedBookingByUserId,
     getScheduledBookingByUserId: parkingStore.getScheduledBookingByUserId,
     getPendingArrivalBookingByUserId: parkingStore.getPendingArrivalBookingByUserId,

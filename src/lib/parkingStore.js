@@ -2,6 +2,7 @@ import { parkings as seedParkings, bookings as seedBookings } from '../data/mock
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import { bookingFromRow, bookingToRow, parkingFromRow, parkingToRow } from './supabaseMappers';
 import { calculateBookingPrice, getActualChargeMinutes, getElapsedMinutesFromStartedAt, toLocalDateStr } from './bookingPricing';
+import { getOwnerParkingStatus } from './ownerParkingStatus';
 import {
   addMinutesToTime,
   getBookingStartMs,
@@ -240,6 +241,12 @@ export function getBookingById(id) {
 
 export function getParkingsByOwnerId(ownerId) {
   return state.parkings.filter((p) => p.ownerId === ownerId);
+}
+
+export function getOwnerParkingDisplayStatus(parkingId, now = new Date()) {
+  const parking = findParking(parkingId);
+  if (!parking) return null;
+  return getOwnerParkingStatus(parking, state.bookings, now);
 }
 
 export function getScheduledBookingByUserId(userId) {

@@ -170,6 +170,31 @@ img {
   color: var(--color-text-secondary);
 }
 
+.badge--frozen {
+  background: #ECEFF1;
+  color: #546E7A;
+}
+
+.badge--available {
+  background: #E8F5E9;
+  color: var(--color-success);
+}
+
+.badge--reserved {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.badge--occupied {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.badge--unavailable {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
 .badge--error {
   background: #FFEBEE;
   color: var(--color-error);

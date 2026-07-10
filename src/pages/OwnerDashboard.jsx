@@ -27,6 +27,19 @@ const RANGE_OPTIONS = [
 ];
 const DEFAULT_SLOT = { start: '08:00', end: '20:00' };
 
+const STATUS_SORT_ORDER = {
+  occupied: 0,
+  reserved: 1,
+  available: 2,
+  unavailable: 3,
+  frozen: 4,
+};
+
+function getStatusSortRank(parking, getOwnerParkingDisplayStatus) {
+  const status = getOwnerParkingDisplayStatus(parking.id)?.status || 'available';
+  return STATUS_SORT_ORDER[status] ?? STATUS_SORT_ORDER.available;
+}
+
 function normalizeTimeValue(value) {
   return normalizeTime(value || '00:00');
 }
@@ -96,6 +109,7 @@ export default function OwnerDashboard() {
   const { user } = useAuth();
   const {
     getParkingsByOwnerId,
+    getOwnerParkingDisplayStatus,
     updateParkingUpcomingAvailability,
     updateParkingDetails,
     setParkingStatus,
@@ -133,7 +147,8 @@ export default function OwnerDashboard() {
 
   const sortedParkings = useMemo(() => (
     [...parkings].sort((a, b) => {
-      const statusSort = (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1);
+      const statusSort = getStatusSortRank(a, getOwnerParkingDisplayStatus)
+        - getStatusSortRank(b, getOwnerParkingDisplayStatus);
       if (statusSort !== 0) return statusSort;
       const incomeSort = sortDirection === 'asc'
         ? a.incomeToday - b.incomeToday
@@ -141,7 +156,7 @@ export default function OwnerDashboard() {
       if (incomeSort !== 0) return incomeSort;
       return a.name.localeCompare(b.name, 'he');
     })
-  ), [parkings, sortDirection]);
+  ), [parkings, sortDirection, getOwnerParkingDisplayStatus]);
 
   const ownerPerformance = useMemo(() => {
     return sortedParkings.reduce((acc, parking) => {

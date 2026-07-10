@@ -1,8 +1,10 @@
 import './ParkingCard.css';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Star, Image, MoreVertical, Pencil, BarChart3, ArrowLeft } from 'lucide-react';
+import { useParking } from '../../context/ParkingContext';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
+import OwnerParkingStatusBadge from './OwnerParkingStatusBadge';
 
 function ParkingThumbnail({ parking, className }) {
   if (parking.image) {
@@ -26,6 +28,7 @@ export default function ParkingCard({
   showBookButton = true,
 }) {
   const navigate = useNavigate();
+  const { getOwnerParkingDisplayStatus } = useParking();
 
   if (!parking) return null;
 
@@ -111,12 +114,12 @@ export default function ParkingCard({
   }
 
   if (variant === 'owner') {
+    const displayStatus = getOwnerParkingDisplayStatus(parking.id);
+
     return (
       <div className="parking-card parking-card--owner card">
         <div className="parking-card__owner-header">
-          <span className={`badge ${parking.status === 'active' ? 'badge--success' : 'badge--inactive'}`}>
-            {parking.status === 'active' ? 'פעילה' : 'לא פעילה'}
-          </span>
+          <OwnerParkingStatusBadge displayStatus={displayStatus} />
           <button
             type="button"
             className="parking-card__menu"
