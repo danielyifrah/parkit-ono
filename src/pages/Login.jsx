@@ -44,6 +44,10 @@ export default function Login() {
     setSubmitting(true);
     setError('');
     const result = await loginWithGoogle();
+    if (result.redirecting) {
+      // Leaving the page for Google OAuth — keep "מתחבר..." until redirect.
+      return;
+    }
     setSubmitting(false);
     if (result.success) {
       navigate('/');

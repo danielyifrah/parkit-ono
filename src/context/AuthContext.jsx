@@ -5,7 +5,6 @@ import { profileFromRow, profileToRow } from '../lib/supabaseMappers';
 import { isAdmin, isDriver, isOwner, USER_ROLES } from '../lib/roles';
 import { findLocalProfileByEmail } from '../lib/adminStore';
 
-const DEMO_PASSWORD = 'demo1234';
 const AuthContext = createContext(null);
 const CREDENTIALS_KEY = 'parkit_credentials';
 const SUSPENDED_ERROR = 'החשבון הושעה. לפרטים נוספים פנו לתמיכה.';
@@ -215,8 +214,20 @@ export function AuthProvider({ children }) {
       return { success: true };
     }
 
-    return login('israel@example.com', DEMO_PASSWORD);
-  }, [login, persistUser]);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message || 'ההתחברות עם Google נכשלה' };
+    }
+
+    // Browser redirects to Google; session is restored via onAuthStateChange on return.
+    return { success: true, redirecting: true };
+  }, [persistUser]);
 
   const register = useCallback(async (name, email, password, role = USER_ROLES.DRIVER) => {
     if (password.length < 6) {

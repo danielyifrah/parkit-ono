@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollText } from 'lucide-react';
 import {
   fetchAdminActivityLog,
@@ -17,7 +17,7 @@ const FILTERS = [
 ];
 
 export default function AdminActivity() {
-  const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
@@ -26,22 +26,24 @@ export default function AdminActivity() {
     setLoading(true);
     try {
       const list = await fetchAdminActivityLog({ limit: 150, actionType: 'all' });
-      const group = FILTERS.find((f) => f.value === groupFilter);
-      const filtered = group?.types
-        ? list.filter((e) => group.types.includes(e.actionType))
-        : list;
-      setEntries(filtered);
+      setAllEntries(list);
       setError('');
     } catch {
       setError('שגיאה בטעינת יומן הפעולות');
     } finally {
       setLoading(false);
     }
-  }, [groupFilter]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const entries = useMemo(() => {
+    const group = FILTERS.find((f) => f.value === groupFilter);
+    if (!group?.types) return allEntries;
+    return allEntries.filter((e) => group.types.includes(e.actionType));
+  }, [allEntries, groupFilter]);
 
   return (
     <div className="admin-page">

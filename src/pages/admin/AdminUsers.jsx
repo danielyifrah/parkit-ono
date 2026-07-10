@@ -90,14 +90,14 @@ export default function AdminUsers() {
       setFormError('יש להזין שם');
       return;
     }
-    if (!form.email.trim()) {
-      setFormError('יש להזין אימייל');
-      return;
-    }
 
     setSaving(true);
     setFormError('');
-    const result = await updateAdminProfile(editing.id, form, { actor: currentUser });
+    const result = await updateAdminProfile(editing.id, {
+      name: form.name,
+      phone: form.phone,
+      role: form.role,
+    }, { actor: currentUser });
     setSaving(false);
 
     if (!result.ok) {
@@ -168,79 +168,150 @@ export default function AdminUsers() {
       {error && <p className="admin-page__error">{error}</p>}
 
       {!loading && !error && (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>שם</th>
-                <th>אימייל</th>
-                <th>טלפון</th>
-                <th>תפקיד</th>
-                <th>סטטוס</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+        <>
+          <div className="admin-view--desktop">
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>שם</th>
+                    <th>אימייל</th>
+                    <th>טלפון</th>
+                    <th>תפקיד</th>
+                    <th>סטטוס</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((profile) => (
+                    <tr key={profile.id} className={profile.suspended ? 'admin-table__row--muted' : ''}>
+                      <td>
+                        <div className="admin-table__name">
+                          <strong>{profile.name}</strong>
+                          {profile.id === currentUser?.id && (
+                            <span className="admin-table__you">את/ה</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>{profile.email}</td>
+                      <td>{profile.phone || '—'}</td>
+                      <td>
+                        <span className={`admin-role admin-role--${profile.role}`}>
+                          {ROLE_LABELS[profile.role] || profile.role}
+                        </span>
+                      </td>
+                      <td>
+                        {profile.suspended ? (
+                          <span className="admin-status-pill admin-status-pill--danger">מושעה</span>
+                        ) : (
+                          <span className="admin-status-pill admin-status-pill--ok">פעיל</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="admin-table__actions">
+                          <button
+                            type="button"
+                            className="admin-table__action"
+                            onClick={() => openEdit(profile)}
+                            aria-label={`עריכת ${profile.name}`}
+                          >
+                            <Icon icon={Pencil} size={16} />
+                          </button>
+                          {profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id && (
+                            <button
+                              type="button"
+                              className="admin-table__action"
+                              onClick={() => {
+                                setSuspendTarget(profile);
+                                setSuspendReason(profile.suspendedReason || '');
+                                setSuspendError('');
+                              }}
+                              aria-label={profile.suspended ? `ביטול השעיה של ${profile.name}` : `השעיית ${profile.name}`}
+                            >
+                              <Icon icon={profile.suspended ? UserCheck : Ban} size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="admin-table__empty">לא נמצאו משתמשים</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="admin-view--mobile">
+            <div className="admin-parking-list">
               {filtered.map((profile) => (
-                <tr key={profile.id} className={profile.suspended ? 'admin-table__row--muted' : ''}>
-                  <td>
-                    <div className="admin-table__name">
-                      <strong>{profile.name}</strong>
-                      {profile.id === currentUser?.id && (
-                        <span className="admin-table__you">את/ה</span>
-                      )}
+                <article
+                  key={profile.id}
+                  className={`admin-parking-card ${profile.suspended ? 'admin-table__row--muted' : ''}`}
+                >
+                  <div className="admin-parking-card__top">
+                    <div>
+                      <h3>
+                        <span className="admin-table__name">
+                          {profile.name}
+                          {profile.id === currentUser?.id && (
+                            <span className="admin-table__you">את/ה</span>
+                          )}
+                        </span>
+                      </h3>
+                      <p>{profile.email}</p>
                     </div>
-                  </td>
-                  <td>{profile.email}</td>
-                  <td>{profile.phone || '—'}</td>
-                  <td>
-                    <span className={`admin-role admin-role--${profile.role}`}>
-                      {ROLE_LABELS[profile.role] || profile.role}
-                    </span>
-                  </td>
-                  <td>
                     {profile.suspended ? (
                       <span className="admin-status-pill admin-status-pill--danger">מושעה</span>
                     ) : (
                       <span className="admin-status-pill admin-status-pill--ok">פעיל</span>
                     )}
-                  </td>
-                  <td>
-                    <div className="admin-table__actions">
-                      <button
-                        type="button"
-                        className="admin-table__action"
-                        onClick={() => openEdit(profile)}
-                        aria-label={`עריכת ${profile.name}`}
-                      >
-                        <Icon icon={Pencil} size={16} />
-                      </button>
-                      {profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id && (
-                        <button
-                          type="button"
-                          className="admin-table__action"
-                          onClick={() => {
-                            setSuspendTarget(profile);
-                            setSuspendReason(profile.suspendedReason || '');
-                            setSuspendError('');
-                          }}
-                          aria-label={profile.suspended ? `ביטול השעיה של ${profile.name}` : `השעיית ${profile.name}`}
-                        >
-                          <Icon icon={profile.suspended ? UserCheck : Ban} size={16} />
-                        </button>
-                      )}
+                  </div>
+                  <dl className="admin-parking-card__meta">
+                    <div>
+                      <dt>טלפון</dt>
+                      <dd>{profile.phone || '—'}</dd>
                     </div>
-                  </td>
-                </tr>
+                    <div>
+                      <dt>תפקיד</dt>
+                      <dd>
+                        <span className={`admin-role admin-role--${profile.role}`}>
+                          {ROLE_LABELS[profile.role] || profile.role}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="admin-parking-card__actions">
+                    <Button size="sm" variant="secondary" onClick={() => openEdit(profile)}>
+                      <Icon icon={Pencil} size={14} />
+                      עריכה
+                    </Button>
+                    {profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setSuspendTarget(profile);
+                          setSuspendReason(profile.suspendedReason || '');
+                          setSuspendError('');
+                        }}
+                      >
+                        <Icon icon={profile.suspended ? UserCheck : Ban} size={14} />
+                        {profile.suspended ? 'ביטול השעיה' : 'השעיה'}
+                      </Button>
+                    )}
+                  </div>
+                </article>
               ))}
               {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="admin-table__empty">לא נמצאו משתמשים</td>
-                </tr>
+                <p className="admin-page__muted">לא נמצאו משתמשים</p>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </div>
+        </>
       )}
 
       <Modal
@@ -258,7 +329,7 @@ export default function AdminUsers() {
             label="אימייל"
             type="email"
             value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            disabled
           />
           <Input
             label="טלפון"
@@ -279,7 +350,7 @@ export default function AdminUsers() {
             <p className="admin-page__muted">לא ניתן לשנות את התפקיד של עצמך.</p>
           )}
           <p className="admin-page__muted">
-            אמצעי תשלום ופרטי אשראי אינם מוצגים ואינם ניתנים לעריכה כאן.
+            אימייל משמש להתחברות ולכן אינו ניתן לשינוי כאן. אמצעי תשלום אינם מוצגים.
           </p>
           {formError && <p className="admin-page__error">{formError}</p>}
           <div className="admin-form__actions">

@@ -74,7 +74,9 @@ export default function AdminSettings() {
 
       <section className={`admin-maintenance ${bookingsDisabled ? 'admin-maintenance--on' : ''}`}>
         <div className="admin-maintenance__status">
-          <Icon icon={bookingsDisabled ? AlertTriangle : Power} size={28} />
+          <span className="admin-maintenance__icon">
+            <Icon icon={bookingsDisabled ? AlertTriangle : Power} size={22} />
+          </span>
           <div>
             <h2>{bookingsDisabled ? 'האפליקציה מושבתת כרגע' : 'האפליקציה פעילה'}</h2>
             <p>

@@ -40,6 +40,7 @@ export default function AdminBookings() {
     adminRefundBooking,
   } = useParking();
   const [profilesById, setProfilesById] = useState({});
+  const [profilesReady, setProfilesReady] = useState(false);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('open');
   const [confirmAction, setConfirmAction] = useState(null);
@@ -53,7 +54,10 @@ export default function AdminBookings() {
       .then((list) => {
         if (active) setProfilesById(Object.fromEntries(list.map((p) => [p.id, p])));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (active) setProfilesReady(true);
+      });
     return () => { active = false; };
   }, []);
 
@@ -139,6 +143,32 @@ export default function AdminBookings() {
     setConfirmAction(null);
   }, [confirmAction, adminCancelBooking, adminRefundBooking, actor, getParkingById, profilesById, formatPrice]);
 
+  const renderActions = (booking) => {
+    const canCancel = OPEN_STATUSES.includes(booking.status);
+    const canRefund = ['completed', 'cancelled'].includes(booking.status) && !booking.refunded;
+
+    if (!canCancel && !canRefund) {
+      return <span className="admin-page__muted">אין פעולות</span>;
+    }
+
+    return (
+      <div className="admin-parking-card__actions">
+        {canCancel && (
+          <Button size="sm" variant="secondary" onClick={() => openConfirm('cancel', booking)}>
+            <Icon icon={Ban} size={14} />
+            ביטול + החזר
+          </Button>
+        )}
+        {canRefund && (
+          <Button size="sm" variant="secondary" onClick={() => openConfirm('refund', booking)}>
+            <Icon icon={RotateCcw} size={14} />
+            סימון החזר
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="admin-page">
       <header className="admin-page__header">
@@ -174,80 +204,132 @@ export default function AdminBookings() {
       {actionOk && <p className="admin-page__success">{actionOk}</p>}
       {actionError && !confirmAction && <p className="admin-page__error">{actionError}</p>}
 
-      <div className="admin-booking-list">
-        {filtered.map((booking) => {
-          const parking = getParkingById(booking.parkingId);
-          const driver = profilesById[booking.userId];
-          const canCancel = OPEN_STATUSES.includes(booking.status);
-          const canRefund = ['completed', 'cancelled'].includes(booking.status) && !booking.refunded;
-
-          return (
-            <article key={booking.id} className="admin-booking-card">
-              <div className="admin-booking-card__top">
-                <div>
-                  <h3>{parking?.name || 'חניה'}</h3>
-                  <p>{parking?.address || booking.parkingId}</p>
-                </div>
-                <div className="admin-booking-card__badges">
-                  <span className={`admin-booking-status admin-booking-status--${booking.status}`}>
-                    {BOOKING_STATUS_LABELS[booking.status] || booking.status}
-                  </span>
-                  {booking.refunded && (
-                    <span className="admin-booking-status admin-booking-status--refunded">הוחזר</span>
+      {!profilesReady ? (
+        <p className="admin-page__muted">טוען הזמנות...</p>
+      ) : (
+        <>
+          <div className="admin-view--desktop">
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>חניה</th>
+                    <th>נהג</th>
+                    <th>מועד</th>
+                    <th>סכום</th>
+                    <th>סטטוס</th>
+                    <th>תשלום</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((booking) => {
+                    const parking = getParkingById(booking.parkingId);
+                    const driver = profilesById[booking.userId];
+                    return (
+                      <tr key={booking.id}>
+                        <td className="admin-table__cell--wrap">
+                          <strong>{parking?.name || 'חניה'}</strong>
+                          <span className="admin-table__sub">{parking?.address || '—'}</span>
+                        </td>
+                        <td className="admin-table__cell--wrap">
+                          {driver ? (
+                            <>
+                              <strong>{driver.name}</strong>
+                              <span className="admin-table__sub">{driver.email}</span>
+                            </>
+                          ) : '—'}
+                        </td>
+                        <td>{formatBookingWhen(booking)}</td>
+                        <td>{formatPrice(booking.totalPrice || 0)}</td>
+                        <td>
+                          <span className={`admin-booking-status admin-booking-status--${booking.status}`}>
+                            {BOOKING_STATUS_LABELS[booking.status] || booking.status}
+                          </span>
+                          {booking.refunded && (
+                            <>
+                              {' '}
+                              <span className="admin-booking-status admin-booking-status--refunded">הוחזר</span>
+                            </>
+                          )}
+                        </td>
+                        <td>{booking.paymentMethod || '—'}</td>
+                        <td>{renderActions(booking)}</td>
+                      </tr>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="admin-table__empty">לא נמצאו הזמנות</td>
+                    </tr>
                   )}
-                </div>
-              </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              <dl className="admin-parking-card__meta">
-                <div>
-                  <dt>נהג</dt>
-                  <dd>
-                    {driver ? (
-                      <>
-                        <strong>{driver.name}</strong>
-                        <span className="admin-page__muted"> · {driver.email}</span>
-                      </>
-                    ) : (booking.userId || '—')}
-                  </dd>
-                </div>
-                <div>
-                  <dt>מועד</dt>
-                  <dd>{formatBookingWhen(booking)}</dd>
-                </div>
-                <div>
-                  <dt>סכום</dt>
-                  <dd>{formatPrice(booking.totalPrice || 0)}</dd>
-                </div>
-                <div>
-                  <dt>תשלום</dt>
-                  <dd>{booking.paymentMethod || '—'}</dd>
-                </div>
-              </dl>
+          <div className="admin-view--mobile">
+            <div className="admin-booking-list">
+              {filtered.map((booking) => {
+                const parking = getParkingById(booking.parkingId);
+                const driver = profilesById[booking.userId];
 
-              <div className="admin-parking-card__actions">
-                {canCancel && (
-                  <Button size="sm" variant="secondary" onClick={() => openConfirm('cancel', booking)}>
-                    <Icon icon={Ban} size={14} />
-                    ביטול + החזר
-                  </Button>
-                )}
-                {canRefund && (
-                  <Button size="sm" variant="secondary" onClick={() => openConfirm('refund', booking)}>
-                    <Icon icon={RotateCcw} size={14} />
-                    סימון החזר
-                  </Button>
-                )}
-                {!canCancel && !canRefund && (
-                  <span className="admin-page__muted">אין פעולות זמינות</span>
-                )}
-              </div>
-            </article>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="admin-page__muted">לא נמצאו הזמנות</p>
-        )}
-      </div>
+                return (
+                  <article key={booking.id} className="admin-booking-card">
+                    <div className="admin-booking-card__top">
+                      <div>
+                        <h3>{parking?.name || 'חניה'}</h3>
+                        <p>{parking?.address || '—'}</p>
+                      </div>
+                      <div className="admin-booking-card__badges">
+                        <span className={`admin-booking-status admin-booking-status--${booking.status}`}>
+                          {BOOKING_STATUS_LABELS[booking.status] || booking.status}
+                        </span>
+                        {booking.refunded && (
+                          <span className="admin-booking-status admin-booking-status--refunded">הוחזר</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <dl className="admin-parking-card__meta">
+                      <div>
+                        <dt>נהג</dt>
+                        <dd>
+                          {driver ? (
+                            <>
+                              <strong>{driver.name}</strong>
+                              <span className="admin-page__muted"> · {driver.email}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>מועד</dt>
+                        <dd>{formatBookingWhen(booking)}</dd>
+                      </div>
+                      <div>
+                        <dt>סכום</dt>
+                        <dd>{formatPrice(booking.totalPrice || 0)}</dd>
+                      </div>
+                      <div>
+                        <dt>תשלום</dt>
+                        <dd>{booking.paymentMethod || '—'}</dd>
+                      </div>
+                    </dl>
+
+                    {renderActions(booking)}
+                  </article>
+                );
+              })}
+              {filtered.length === 0 && (
+                <p className="admin-page__muted">לא נמצאו הזמנות</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       <Modal
         title={confirmAction?.type === 'refund' ? 'סימון החזר' : 'ביטול הזמנה'}

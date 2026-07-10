@@ -31,6 +31,7 @@ export default function AdminParkings() {
   } = useParking();
   const { formatPrice } = useCurrency();
   const [ownersById, setOwnersById] = useState({});
+  const [profilesReady, setProfilesReady] = useState(false);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editing, setEditing] = useState(null);
@@ -53,7 +54,10 @@ export default function AdminParkings() {
         if (!active) return;
         setOwnersById(Object.fromEntries(list.map((p) => [p.id, p])));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (active) setProfilesReady(true);
+      });
     return () => {
       active = false;
     };
@@ -181,6 +185,23 @@ export default function AdminParkings() {
     });
   }, [removeParking, actor]);
 
+  const renderActions = (parking) => (
+    <div className="admin-parking-card__actions">
+      <Button size="sm" variant="secondary" onClick={() => openEdit(parking)}>
+        <Icon icon={Pencil} size={14} />
+        עריכה
+      </Button>
+      <Button size="sm" variant="secondary" onClick={() => toggleFreeze(parking)}>
+        <Icon icon={parking.status === 'inactive' ? Sun : Snowflake} size={14} />
+        {parking.status === 'inactive' ? 'הפשרה' : 'הקפאה'}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => handleRemove(parking)}>
+        <Icon icon={Trash2} size={14} />
+        הסרה
+      </Button>
+    </div>
+  );
+
   return (
     <div className="admin-page">
       <header className="admin-page__header">
@@ -215,67 +236,122 @@ export default function AdminParkings() {
 
       {actionError && <p className="admin-page__error">{actionError}</p>}
 
-      <div className="admin-parking-list">
-        {filtered.map(({ parking, displayStatus }) => {
-          const meta = OWNER_PARKING_STATUS_META[displayStatus] || OWNER_PARKING_STATUS_META.unavailable;
-          const owner = ownersById[parking.ownerId];
-          return (
-            <article key={parking.id} className="admin-parking-card">
-              <div className="admin-parking-card__top">
-                <div>
-                  <h3>{parking.name}</h3>
-                  <p>{parking.address}</p>
-                </div>
-                <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
-              </div>
-              <dl className="admin-parking-card__meta">
-                <div>
-                  <dt>בעלים</dt>
-                  <dd>
-                    {owner ? (
-                      <>
-                        <strong>{owner.name}</strong>
-                        <span className="admin-page__muted"> · {owner.email}</span>
-                      </>
-                    ) : (
-                      parking.ownerId
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt>מחיר</dt>
-                  <dd>{formatPrice(parking.pricePerHour)} / שעה</dd>
-                </div>
-                <div>
-                  <dt>מס׳ מקום</dt>
-                  <dd>{parking.spotNumber || '—'}</dd>
-                </div>
-                <div>
-                  <dt>רישום</dt>
-                  <dd>{parking.status === 'inactive' ? 'מוקפא' : 'פעיל'}</dd>
-                </div>
-              </dl>
-              <div className="admin-parking-card__actions">
-                <Button size="sm" variant="secondary" onClick={() => openEdit(parking)}>
-                  <Icon icon={Pencil} size={14} />
-                  עריכה
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => toggleFreeze(parking)}>
-                  <Icon icon={parking.status === 'inactive' ? Sun : Snowflake} size={14} />
-                  {parking.status === 'inactive' ? 'הפשרה' : 'הקפאה'}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleRemove(parking)}>
-                  <Icon icon={Trash2} size={14} />
-                  הסרה
-                </Button>
-              </div>
-            </article>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="admin-page__muted">לא נמצאו חניות</p>
-        )}
-      </div>
+      {!profilesReady ? (
+        <p className="admin-page__muted">טוען חניות...</p>
+      ) : (
+        <>
+          <div className="admin-view--desktop">
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>חניה</th>
+                    <th>בעלים</th>
+                    <th>מחיר</th>
+                    <th>מקום</th>
+                    <th>סטטוס</th>
+                    <th>רישום</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(({ parking, displayStatus }) => {
+                    const meta = OWNER_PARKING_STATUS_META[displayStatus]
+                      || OWNER_PARKING_STATUS_META.unavailable;
+                    const owner = ownersById[parking.ownerId];
+                    return (
+                      <tr key={parking.id}>
+                        <td className="admin-table__cell--wrap">
+                          <strong>{parking.name}</strong>
+                          <span className="admin-table__sub">{parking.address}</span>
+                        </td>
+                        <td className="admin-table__cell--wrap">
+                          {owner ? (
+                            <>
+                              <strong>{owner.name}</strong>
+                              <span className="admin-table__sub">{owner.email}</span>
+                            </>
+                          ) : '—'}
+                        </td>
+                        <td>{formatPrice(parking.pricePerHour)} / שעה</td>
+                        <td>{parking.spotNumber || '—'}</td>
+                        <td>
+                          <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
+                        </td>
+                        <td>
+                          {parking.status === 'inactive' ? (
+                            <span className="admin-status-pill admin-status-pill--danger">מוקפא</span>
+                          ) : (
+                            <span className="admin-status-pill admin-status-pill--ok">פעיל</span>
+                          )}
+                        </td>
+                        <td>{renderActions(parking)}</td>
+                      </tr>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="admin-table__empty">לא נמצאו חניות</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="admin-view--mobile">
+            <div className="admin-parking-list">
+              {filtered.map(({ parking, displayStatus }) => {
+                const meta = OWNER_PARKING_STATUS_META[displayStatus]
+                  || OWNER_PARKING_STATUS_META.unavailable;
+                const owner = ownersById[parking.ownerId];
+                return (
+                  <article key={parking.id} className="admin-parking-card">
+                    <div className="admin-parking-card__top">
+                      <div>
+                        <h3>{parking.name}</h3>
+                        <p>{parking.address}</p>
+                      </div>
+                      <span className={`badge ${meta.badgeClass}`}>{meta.label}</span>
+                    </div>
+                    <dl className="admin-parking-card__meta">
+                      <div>
+                        <dt>בעלים</dt>
+                        <dd>
+                          {owner ? (
+                            <>
+                              <strong>{owner.name}</strong>
+                              <span className="admin-page__muted"> · {owner.email}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>מחיר</dt>
+                        <dd>{formatPrice(parking.pricePerHour)} / שעה</dd>
+                      </div>
+                      <div>
+                        <dt>מס׳ מקום</dt>
+                        <dd>{parking.spotNumber || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>רישום</dt>
+                        <dd>{parking.status === 'inactive' ? 'מוקפא' : 'פעיל'}</dd>
+                      </div>
+                    </dl>
+                    {renderActions(parking)}
+                  </article>
+                );
+              })}
+              {filtered.length === 0 && (
+                <p className="admin-page__muted">לא נמצאו חניות</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       <Modal
         title="עריכת חניה"
