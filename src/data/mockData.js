@@ -41,6 +41,12 @@ function toDateStr(date) {
   return `${y}-${m}-${d}`;
 }
 
+function offsetDateStr(daysFromToday) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  return toDateStr(date);
+}
+
 export const users = [
   {
     id: 'user-1',
@@ -364,6 +370,84 @@ export const bookings = [
     status: 'completed',
     paymentMethod: 'Google Pay',
     createdAt: '2026-05-12T15:45:00',
+  },
+  {
+    id: 'b9',
+    userId: 'user-1',
+    parkingId: 'p1',
+    date: offsetDateStr(0),
+    startTime: '10:00',
+    endTime: '13:00',
+    durationHours: 3,
+    totalPrice: 66,
+    status: 'active',
+    paymentMethod: 'כרטיס אשראי',
+    createdAt: `${offsetDateStr(0)}T09:40:00`,
+  },
+  {
+    id: 'b10',
+    userId: 'user-1',
+    parkingId: 'p1',
+    date: offsetDateStr(0),
+    startTime: '18:00',
+    endTime: '21:00',
+    durationHours: 3,
+    totalPrice: 66,
+    status: 'scheduled',
+    paymentMethod: 'כרטיס אשראי',
+    createdAt: `${offsetDateStr(-1)}T12:00:00`,
+  },
+  {
+    id: 'b11',
+    userId: 'user-1',
+    parkingId: 'p2',
+    date: offsetDateStr(1),
+    startTime: '09:00',
+    endTime: '12:30',
+    durationHours: 3.5,
+    totalPrice: 87.5,
+    status: 'scheduled',
+    paymentMethod: 'Apple Pay',
+    createdAt: `${offsetDateStr(-1)}T16:20:00`,
+  },
+  {
+    id: 'b12',
+    userId: 'user-1',
+    parkingId: 'p1',
+    date: offsetDateStr(2),
+    startTime: '14:00',
+    endTime: '17:00',
+    durationHours: 3,
+    totalPrice: 66,
+    status: 'scheduled',
+    paymentMethod: 'כרטיס אשראי',
+    createdAt: `${offsetDateStr(0)}T08:10:00`,
+  },
+  {
+    id: 'b13',
+    userId: 'user-1',
+    parkingId: 'p3',
+    date: offsetDateStr(3),
+    startTime: '19:00',
+    endTime: '22:00',
+    durationHours: 3,
+    totalPrice: 54,
+    status: 'scheduled',
+    paymentMethod: 'Google Pay',
+    createdAt: `${offsetDateStr(0)}T11:00:00`,
+  },
+  {
+    id: 'b14',
+    userId: 'user-1',
+    parkingId: 'p2',
+    date: offsetDateStr(5),
+    startTime: '11:00',
+    endTime: '15:00',
+    durationHours: 4,
+    totalPrice: 100,
+    status: 'scheduled',
+    paymentMethod: 'כרטיס אשראי',
+    createdAt: `${offsetDateStr(1)}T09:00:00`,
   },
 ];
 

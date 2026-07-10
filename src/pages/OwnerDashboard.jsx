@@ -12,6 +12,7 @@ import {
 } from '../lib/parkingFormValidation';
 import StatCard from '../components/ui/StatCard';
 import ParkingCard from '../components/parking/ParkingCard';
+import OwnerWeeklySchedule from '../components/owner/OwnerWeeklySchedule';
 import Button from '../components/ui/Button';
 import Input, { Select, Textarea } from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
@@ -391,6 +392,13 @@ export default function OwnerDashboard() {
             />
           </div>
         </section>
+
+        {parkings.length > 0 && (
+          <OwnerWeeklySchedule
+            parkings={sortedParkings}
+            ownerId={user?.id || ''}
+          />
+        )}
 
         <section className="owner-dashboard__section">
           <div className="owner-dashboard__section-header">

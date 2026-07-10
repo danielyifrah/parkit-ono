@@ -1,9 +1,16 @@
-import { parkings as seedParkings, bookings as seedBookings } from '../data/mockData';
+import { parkings as seedParkings, bookings as seedBookings, users as seedUsers } from '../data/mockData';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
-import { bookingFromRow, bookingToRow, parkingFromRow, parkingToRow } from './supabaseMappers';
+import {
+  bookingFromRow,
+  bookingToRow,
+  parkingFromRow,
+  parkingToRow,
+  profileFromRow,
+} from './supabaseMappers';
 import { calculateBookingPrice, getActualChargeMinutes, getElapsedMinutesFromStartedAt, toLocalDateStr } from './bookingPricing';
 import { getCancellationPreview } from './cancellationPolicy';
 import { getOwnerParkingStatus } from './ownerParkingStatus';
+import { MAX_SEARCH_DAYS_AHEAD } from './searchContext';
 import {
   addMinutesToTime,
   getBookingStartMs,
@@ -15,18 +22,30 @@ import {
   validateBookingSlot,
 } from './availability';
 
-const STORAGE_KEY = 'parkit_store_v1';
+const STORAGE_KEY = 'parkit_store_v2';
 export const HOLD_MINUTES = 10;
 export const PRE_START_HOLD_MINUTES = 10;
 /** @deprecated use HOLD_MINUTES */
 export const SAVED_HOLD_MINUTES = HOLD_MINUTES;
 
+const ACTIVE_SCHEDULE_STATUSES = ['scheduled', 'pending_arrival', 'saved', 'active'];
+
 const listeners = new Set();
+
+function profilesFromSeedUsers() {
+  return Object.fromEntries(seedUsers.map((user) => [user.id, {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+  }]));
+}
 
 function cloneSeed() {
   return {
     parkings: JSON.parse(JSON.stringify(seedParkings)),
     bookings: JSON.parse(JSON.stringify(seedBookings)),
+    profilesById: profilesFromSeedUsers(),
   };
 }
 
@@ -35,7 +54,15 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.parkings?.length) return parsed;
+      if (parsed?.parkings?.length) {
+        return {
+          ...parsed,
+          profilesById: {
+            ...profilesFromSeedUsers(),
+            ...(parsed.profilesById || {}),
+          },
+        };
+      }
     }
   } catch {
     /* use seed */
@@ -43,7 +70,9 @@ function loadState() {
   return cloneSeed();
 }
 
-let state = isSupabaseConfigured() ? { parkings: [], bookings: [] } : loadState();
+let state = isSupabaseConfigured()
+  ? { parkings: [], bookings: [], profilesById: {} }
+  : loadState();
 let initPromise = null;
 
 function notify() {
@@ -106,6 +135,7 @@ export async function init({ userId = null, force = false } = {}) {
     }
 
     let bookings = [];
+    let profilesById = {};
     if (userId) {
       // RLS returns only the user's bookings + bookings on parkings they own
       const { data: bookingsData, error: bookingsError } = await supabase
@@ -118,11 +148,28 @@ export async function init({ userId = null, force = false } = {}) {
       }
 
       bookings = bookingsData || [];
+
+      const bookerIds = [...new Set(bookings.map((row) => row.user_id).filter(Boolean))];
+      if (bookerIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, phone, email')
+          .in('id', bookerIds);
+
+        if (profilesError) {
+          console.error('Failed to load booker profiles', profilesError);
+        } else {
+          profilesById = Object.fromEntries(
+            (profilesData || []).map((row) => [row.id, profileFromRow(row)]),
+          );
+        }
+      }
     }
 
     state = {
       parkings: (parkings || []).map(parkingFromRow),
       bookings: bookings.map(bookingFromRow),
+      profilesById,
     };
     notify();
   })();
@@ -241,8 +288,49 @@ export function getBookingById(id) {
   return findBooking(id);
 }
 
+export function getProfileById(userId) {
+  return state.profilesById?.[userId] || null;
+}
+
 export function getParkingsByOwnerId(ownerId) {
   return state.parkings.filter((p) => p.ownerId === ownerId);
+}
+
+/** Upcoming reservations on the owner's parkings for the bookable week window. */
+export function getOwnerUpcomingBookings(ownerId, { daysAhead = MAX_SEARCH_DAYS_AHEAD } = {}) {
+  if (!ownerId) return [];
+
+  const parkingIds = new Set(
+    state.parkings.filter((p) => p.ownerId === ownerId).map((p) => p.id),
+  );
+  if (parkingIds.size === 0) return [];
+
+  const today = toLocalDateStr(new Date());
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + daysAhead);
+  const endDateStr = toLocalDateStr(endDate);
+
+  return state.bookings
+    .filter((booking) => (
+      parkingIds.has(booking.parkingId)
+      && ACTIVE_SCHEDULE_STATUSES.includes(booking.status)
+      && booking.date >= today
+      && booking.date <= endDateStr
+    ))
+    .map((booking) => {
+      const parking = findParking(booking.parkingId);
+      const booker = getProfileById(booking.userId);
+      return {
+        ...booking,
+        parkingName: parking?.name || 'חניה',
+        bookerName: booker?.name || 'מזמין',
+        bookerPhone: booker?.phone || '',
+      };
+    })
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    });
 }
 
 export function getOwnerParkingDisplayStatus(parkingId, now = new Date()) {
