@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import { useParking } from '../../context/ParkingContext';
 import { toLocalDateStr } from '../../lib/bookingPricing';
 import { formatDisplayDate, getDayName, timeToMinutes } from '../../lib/availability';
@@ -7,12 +7,13 @@ import { MAX_SEARCH_DAYS_AHEAD } from '../../lib/searchContext';
 import Icon from '../ui/Icon';
 import './OwnerWeeklySchedule.css';
 
-const HOUR_HEIGHT = 52;
+const HOUR_HEIGHT = 56;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 24;
 const DAY_START_MIN = DAY_START_HOUR * 60;
 const DAY_END_MIN = DAY_END_HOUR * 60;
 const GRID_HEIGHT = ((DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT);
+const DAYS_PER_PAGE = 3;
 
 const PARKING_COLORS = [
   { bg: '#DBEAFE', border: '#2563EB', text: '#1E3A8A' },
@@ -68,10 +69,18 @@ function getHourLabels() {
 
 export default function OwnerWeeklySchedule({ parkings, ownerId }) {
   const { getOwnerUpcomingBookings, version } = useParking();
+  const [isOpen, setIsOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
   const [selectedParkingId, setSelectedParkingId] = useState('all');
 
   const weekDays = useMemo(() => buildWeekDays(), []);
   const hourLabels = useMemo(() => getHourLabels(), []);
+  const pageCount = Math.max(1, Math.ceil(weekDays.length / DAYS_PER_PAGE));
+
+  const visibleDays = useMemo(() => {
+    const start = pageIndex * DAYS_PER_PAGE;
+    return weekDays.slice(start, start + DAYS_PER_PAGE);
+  }, [pageIndex, weekDays]);
 
   const parkingColorMap = useMemo(() => {
     const map = {};
@@ -102,6 +111,11 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
     return map;
   }, [bookings, parkingColorMap, weekDays]);
 
+  const visibleBookingsCount = useMemo(
+    () => visibleDays.reduce((sum, day) => sum + (bookingsByDate[day.date]?.length || 0), 0),
+    [bookingsByDate, visibleDays],
+  );
+
   const nowLineTop = useMemo(() => {
     const now = new Date();
     const minutes = now.getHours() * 60 + now.getMinutes();
@@ -109,154 +123,206 @@ export default function OwnerWeeklySchedule({ parkings, ownerId }) {
     return ((minutes - DAY_START_MIN) / 60) * HOUR_HEIGHT;
   }, []);
 
+  const rangeLabel = visibleDays.length > 0
+    ? `${visibleDays[0].displayDate} – ${visibleDays[visibleDays.length - 1].displayDate}`
+    : '';
+
   if (!parkings.length) return null;
 
   return (
     <section className="owner-week-schedule">
-      <div className="owner-week-schedule__header">
+      <button
+        type="button"
+        className={`owner-week-schedule__toggle ${isOpen ? 'owner-week-schedule__toggle--open' : ''}`}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+      >
         <div className="owner-week-schedule__title-wrap">
           <Icon icon={CalendarDays} size={18} className="app-icon--primary" />
           <div>
             <h2 className="list-section-title">לוח הזמנות — שבוע קרוב</h2>
             <p className="owner-week-schedule__subtitle">
-              מי שמר את החניה ב־7 הימים הקרובים, ומתי היא פנויה לשימוש שלך
+              {isOpen
+                ? 'מי שמר את החניה ב־7 הימים הקרובים, ומתי היא פנויה לשימוש שלך'
+                : bookings.length > 0
+                  ? `${bookings.length} הזמנות בשבוע הקרוב · לחצו לפתיחה`
+                  : 'אין הזמנות בשבוע הקרוב · לחצו לפתיחה'}
             </p>
           </div>
         </div>
+        <Icon
+          icon={isOpen ? ChevronUp : ChevronDown}
+          size={20}
+          className="app-icon--muted"
+        />
+      </button>
 
-        {parkings.length > 1 && (
-          <label className="owner-week-schedule__filter">
-            <span>חניה</span>
-            <select
-              value={selectedParkingId}
-              onChange={(e) => setSelectedParkingId(e.target.value)}
-            >
-              <option value="all">כל החניות</option>
-              {parkings.map((parking) => (
-                <option key={parking.id} value={parking.id}>{parking.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
+      {isOpen && (
+        <div className="owner-week-schedule__body">
+          <div className="owner-week-schedule__toolbar">
+            {parkings.length > 1 && (
+              <label className="owner-week-schedule__filter">
+                <span>חניה</span>
+                <select
+                  value={selectedParkingId}
+                  onChange={(e) => setSelectedParkingId(e.target.value)}
+                >
+                  <option value="all">כל החניות</option>
+                  {parkings.map((parking) => (
+                    <option key={parking.id} value={parking.id}>{parking.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
 
-      <div className="owner-week-schedule__card">
-        <div className="owner-week-schedule__scroll">
-          <div
-            className="owner-week-schedule__grid"
-            style={{ '--day-count': weekDays.length }}
-          >
-            <div className="owner-week-schedule__corner" aria-hidden="true" />
-
-            {weekDays.map((day) => (
-              <div
-                key={day.date}
-                className={`owner-week-schedule__day-head ${day.isToday ? 'owner-week-schedule__day-head--today' : ''}`}
+            <div className="owner-week-schedule__pager">
+              <button
+                type="button"
+                className="owner-week-schedule__pager-btn"
+                onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
+                disabled={pageIndex === 0}
+                aria-label="3 ימים קודמים"
               >
-                <span className="owner-week-schedule__day-name">
-                  {day.relativeLabel || `יום ${day.dayName}`}
+                <Icon icon={ChevronRight} size={18} />
+              </button>
+              <div className="owner-week-schedule__pager-label">
+                <strong>{rangeLabel}</strong>
+                <span>
+                  {pageIndex + 1} / {pageCount}
+                  {visibleBookingsCount > 0 ? ` · ${visibleBookingsCount} הזמנות` : ''}
                 </span>
-                <span className="owner-week-schedule__day-date">{day.displayDate}</span>
               </div>
-            ))}
-
-            <div className="owner-week-schedule__hours" style={{ height: GRID_HEIGHT }}>
-              {hourLabels.map((label) => (
-                <div key={label} className="owner-week-schedule__hour" style={{ height: HOUR_HEIGHT }}>
-                  <span dir="ltr">{label}</span>
-                </div>
-              ))}
-            </div>
-
-            {weekDays.map((day) => (
-              <div
-                key={`col-${day.date}`}
-                className={`owner-week-schedule__day-col ${day.isToday ? 'owner-week-schedule__day-col--today' : ''}`}
-                style={{ height: GRID_HEIGHT }}
+              <button
+                type="button"
+                className="owner-week-schedule__pager-btn"
+                onClick={() => setPageIndex((prev) => Math.min(pageCount - 1, prev + 1))}
+                disabled={pageIndex >= pageCount - 1}
+                aria-label="3 ימים הבאים"
               >
-                {hourLabels.map((label) => (
+                <Icon icon={ChevronLeft} size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="owner-week-schedule__card">
+            <div className="owner-week-schedule__scroll">
+              <div
+                className="owner-week-schedule__grid"
+                style={{ '--day-count': visibleDays.length }}
+              >
+                <div className="owner-week-schedule__corner" aria-hidden="true" />
+
+                {visibleDays.map((day) => (
                   <div
-                    key={`${day.date}-${label}`}
-                    className="owner-week-schedule__slot"
-                    style={{ height: HOUR_HEIGHT }}
-                  />
+                    key={day.date}
+                    className={`owner-week-schedule__day-head ${day.isToday ? 'owner-week-schedule__day-head--today' : ''}`}
+                  >
+                    <span className="owner-week-schedule__day-name">
+                      {day.relativeLabel || `יום ${day.dayName}`}
+                    </span>
+                    <span className="owner-week-schedule__day-date">{day.displayDate}</span>
+                  </div>
                 ))}
 
-                {day.isToday && nowLineTop != null && (
+                <div className="owner-week-schedule__hours" style={{ height: GRID_HEIGHT }}>
+                  {hourLabels.map((label) => (
+                    <div key={label} className="owner-week-schedule__hour" style={{ height: HOUR_HEIGHT }}>
+                      <span dir="ltr">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {visibleDays.map((day) => (
                   <div
-                    className="owner-week-schedule__now"
-                    style={{ top: nowLineTop }}
-                    aria-hidden="true"
-                  />
-                )}
+                    key={`col-${day.date}`}
+                    className={`owner-week-schedule__day-col ${day.isToday ? 'owner-week-schedule__day-col--today' : ''}`}
+                    style={{ height: GRID_HEIGHT }}
+                  >
+                    {hourLabels.map((label) => (
+                      <div
+                        key={`${day.date}-${label}`}
+                        className="owner-week-schedule__slot"
+                        style={{ height: HOUR_HEIGHT }}
+                      />
+                    ))}
 
-                {(bookingsByDate[day.date] || []).map((booking) => {
-                  const top = ((booking.startMin - DAY_START_MIN) / 60) * HOUR_HEIGHT;
-                  const height = Math.max(
-                    28,
-                    ((booking.endMin - booking.startMin) / 60) * HOUR_HEIGHT - 2,
-                  );
-                  const showDetails = height >= 44;
+                    {day.isToday && nowLineTop != null && (
+                      <div
+                        className="owner-week-schedule__now"
+                        style={{ top: nowLineTop }}
+                        aria-hidden="true"
+                      />
+                    )}
 
-                  return (
-                    <article
-                      key={booking.id}
-                      className="owner-week-schedule__event"
-                      style={{
-                        top,
-                        height,
-                        background: booking.color.bg,
-                        borderColor: booking.color.border,
-                        color: booking.color.text,
-                      }}
-                      title={`${booking.bookerName} · ${booking.startTime}–${booking.endTime} · ${booking.parkingName}`}
-                    >
-                      <strong className="owner-week-schedule__event-name">
-                        {booking.bookerName}
-                      </strong>
-                      <span className="owner-week-schedule__event-time" dir="ltr">
-                        {booking.startTime}–{booking.endTime}
-                      </span>
-                      {showDetails && selectedParkingId === 'all' && parkings.length > 1 && (
-                        <span className="owner-week-schedule__event-parking">
-                          {booking.parkingName}
-                        </span>
-                      )}
-                      {showDetails && (
-                        <span className="owner-week-schedule__event-status">
-                          {STATUS_LABELS[booking.status] || booking.status}
-                        </span>
-                      )}
-                    </article>
-                  );
-                })}
+                    {(bookingsByDate[day.date] || []).map((booking) => {
+                      const top = ((booking.startMin - DAY_START_MIN) / 60) * HOUR_HEIGHT;
+                      const height = Math.max(
+                        40,
+                        ((booking.endMin - booking.startMin) / 60) * HOUR_HEIGHT - 3,
+                      );
+                      const showExtra = height >= 52;
+
+                      return (
+                        <article
+                          key={booking.id}
+                          className="owner-week-schedule__event"
+                          style={{
+                            top,
+                            height,
+                            background: booking.color.bg,
+                            borderColor: booking.color.border,
+                            color: booking.color.text,
+                          }}
+                          title={`${booking.bookerName} · ${booking.startTime}–${booking.endTime} · ${booking.parkingName}`}
+                        >
+                          <strong className="owner-week-schedule__event-name">
+                            {booking.bookerName}
+                          </strong>
+                          <span className="owner-week-schedule__event-time" dir="ltr">
+                            {booking.startTime}–{booking.endTime}
+                          </span>
+                          {showExtra && selectedParkingId === 'all' && parkings.length > 1 && (
+                            <span className="owner-week-schedule__event-parking">
+                              {booking.parkingName}
+                            </span>
+                          )}
+                          {showExtra && (
+                            <span className="owner-week-schedule__event-status">
+                              {STATUS_LABELS[booking.status] || booking.status}
+                            </span>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {bookings.length === 0 ? (
+              <p className="owner-week-schedule__empty">
+                אין הזמנות בשבוע הקרוב — החניה פנויה לשימוש שלך בכל שעות הזמינות.
+              </p>
+            ) : (
+              <ul className="owner-week-schedule__legend">
+                {(selectedParkingId === 'all' ? parkings : parkings.filter((p) => p.id === selectedParkingId))
+                  .map((parking) => {
+                    const color = parkingColorMap[parking.id] || PARKING_COLORS[0];
+                    return (
+                      <li key={parking.id}>
+                        <span
+                          className="owner-week-schedule__legend-swatch"
+                          style={{ background: color.bg, borderColor: color.border }}
+                        />
+                        {parking.name}
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
           </div>
         </div>
-
-        {bookings.length === 0 ? (
-          <p className="owner-week-schedule__empty">
-            אין הזמנות בשבוע הקרוב — החניה פנויה לשימוש שלך בכל שעות הזמינות.
-          </p>
-        ) : (
-          <ul className="owner-week-schedule__legend">
-            {(selectedParkingId === 'all' ? parkings : parkings.filter((p) => p.id === selectedParkingId))
-              .map((parking) => {
-                const color = parkingColorMap[parking.id] || PARKING_COLORS[0];
-                return (
-                  <li key={parking.id}>
-                    <span
-                      className="owner-week-schedule__legend-swatch"
-                      style={{ background: color.bg, borderColor: color.border }}
-                    />
-                    {parking.name}
-                  </li>
-                );
-              })}
-          </ul>
-        )}
-      </div>
+      )}
     </section>
   );
 }
