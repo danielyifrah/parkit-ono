@@ -12,6 +12,7 @@ import {
   CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import { calculateBookingPrice, formatDurationLabel } from '../lib/bookingPricing';
 import {
@@ -55,6 +56,7 @@ export default function BookingHistoryDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getBookingById,
     getParkingById,
@@ -101,7 +103,7 @@ export default function BookingHistoryDetails() {
   const durationMinutes = booking.durationMinutes ?? Math.round(booking.durationHours * 60);
   const pricing = calculateBookingPrice(parking.pricePerHour, durationMinutes);
   const hasReview = Boolean(savedReview?.rating);
-  const cancellationPreview = getCancellationPreview(booking);
+  const cancellationPreview = getCancellationPreview(booking, new Date(), formatPrice);
   const status = statusMeta[booking.status] || statusMeta.completed;
 
   const handleCancel = async () => {
@@ -109,7 +111,7 @@ export default function BookingHistoryDetails() {
 
     if (cancellationPreview.fee > 0) {
       const confirmed = window.confirm(
-        `ביטול ההזמנה יחויב ב-₪${cancellationPreview.fee}. להמשיך?`,
+        `ביטול ההזמנה יחויב ב-${formatPrice(cancellationPreview.fee)}. להמשיך?`,
       );
       if (!confirmed) return;
     }
@@ -188,7 +190,7 @@ export default function BookingHistoryDetails() {
 
           <div className="booking-history-details__stats">
             <div className="booking-history-details__stat">
-              <span className="booking-history-details__stat-value">₪{parking.pricePerHour}</span>
+              <span className="booking-history-details__stat-value">{formatPrice(parking.pricePerHour)}</span>
               <span className="booking-history-details__stat-label">לשעה</span>
             </div>
             <div className="booking-history-details__stat">
@@ -254,14 +256,14 @@ export default function BookingHistoryDetails() {
             )}
           </p>
           <p className="booking-history-details__policy">
-            {getCancellationPolicyDescription(booking)}
+            {getCancellationPolicyDescription(booking, formatPrice)}
           </p>
           <p className="booking-history-details__policy-note">
             {cancellationPreview.message}
           </p>
           <div className="booking-history-details__estimated">
             <span>תקרת תשלום משוערת</span>
-            <strong>₪{pricing.total}</strong>
+            <strong>{formatPrice(pricing.total)}</strong>
           </div>
           <Button
             variant="ghost"
@@ -278,7 +280,7 @@ export default function BookingHistoryDetails() {
         <section className="booking-history-details__section card">
           <p className="booking-history-details__cancelled-note">
             ההזמנה בוטלה
-            {booking.cancellationFee > 0 ? ` · חויב ב-₪${booking.cancellationFee}` : ''}
+            {booking.cancellationFee > 0 ? ` · חויב ב-${formatPrice(booking.cancellationFee)}` : ''}
           </p>
         </section>
       )}
@@ -290,7 +292,7 @@ export default function BookingHistoryDetails() {
             <div className="booking-history-details__payment">
               <div className="booking-history-details__payment-row">
                 <span>מחיר בסיס</span>
-                <span>₪{pricing.base}</span>
+                <span>{formatPrice(pricing.base)}</span>
               </div>
               {pricing.discountPercent > 0 && (
                 <div className="booking-history-details__payment-row booking-history-details__payment-row--discount">
@@ -300,7 +302,7 @@ export default function BookingHistoryDetails() {
               )}
               <div className="booking-history-details__payment-total">
                 <span>סה״כ שולם</span>
-                <span className="booking-history-details__payment-amount">₪{booking.totalPrice}</span>
+                <span className="booking-history-details__payment-amount">{formatPrice(booking.totalPrice)}</span>
               </div>
               <div className="booking-history-details__payment-method">
                 <Icon icon={CreditCard} size={16} className="app-icon--muted" />

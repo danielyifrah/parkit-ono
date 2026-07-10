@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Circle, GoogleMap, Marker } from '@react-google-maps/api';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useGoogleMaps } from '../../context/GoogleMapsContext';
 import {
   createParkingMarkerIcon,
@@ -31,6 +32,7 @@ export default function ParkingMap({
   onLocateError,
 }) {
   const { isLoaded, loadError } = useGoogleMaps();
+  const { formatPrice } = useCurrency();
 
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -159,12 +161,12 @@ export default function ParkingMap({
         parking.id,
         createParkingMarkerIcon(
           window.google,
-          parking.pricePerHour,
+          formatPrice(parking.pricePerHour, { compact: true }),
           parking.id === selectedId
         ),
       ])
     );
-  }, [isLoaded, parkings, selectedId]);
+  }, [isLoaded, parkings, selectedId, formatPrice]);
 
   const searchIcon = useMemo(() => {
     if (!isLoaded || !window.google || !focusLocation) return null;
@@ -266,7 +268,7 @@ export default function ParkingMap({
             icon={parkingIcons[parking.id]}
             zIndex={parking.id === selectedId ? 100 : 10}
             onClick={() => onSelectParking(parking.id)}
-            title={`${parking.name} — ₪${parking.pricePerHour} לשעה`}
+            title={`${parking.name} — ${formatPrice(parking.pricePerHour)} לשעה`}
           />
         ))}
       </GoogleMap>

@@ -14,7 +14,7 @@ export function getFreeCancellationDeadlineMs(booking) {
   return startMs - hoursBeforeStart * 60 * 60 * 1000;
 }
 
-export function getCancellationPolicyDescription(booking) {
+export function getCancellationPolicyDescription(booking, formatMoney = (n) => `₪${n}`) {
   if (!booking) return '';
 
   const startMs = getBookingStartMs(booking);
@@ -22,10 +22,10 @@ export function getCancellationPolicyDescription(booking) {
   const leadTimeMs = startMs - bookedAtMs;
   const hoursBeforeStart = leadTimeMs <= FOUR_HOURS_MS ? 2 : 4;
 
-  return `ביטול חינם עד ${hoursBeforeStart} שעות לפני תחילת החניה. לאחר מכן חיוב ביטול של ₪${CANCELLATION_FEE}.`;
+  return `ביטול חינם עד ${hoursBeforeStart} שעות לפני תחילת החניה. לאחר מכן חיוב ביטול של ${formatMoney(CANCELLATION_FEE)}.`;
 }
 
-export function getCancellationPreview(booking, now = new Date()) {
+export function getCancellationPreview(booking, now = new Date(), formatMoney = (n) => `₪${n}`) {
   if (!booking) {
     return { fee: 0, isFree: true, message: '' };
   }
@@ -56,6 +56,6 @@ export function getCancellationPreview(booking, now = new Date()) {
     deadlineMs,
     message: isFree
       ? `ביטול חינם עד ${hoursBeforeStart} שעות לפני תחילת החניה`
-      : `ביטול כרגע יחויב ב-₪${CANCELLATION_FEE}`,
+      : `ביטול כרגע יחויב ב-${formatMoney(CANCELLATION_FEE)}`,
   };
 }

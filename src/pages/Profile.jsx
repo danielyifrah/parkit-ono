@@ -5,18 +5,20 @@ import {
   Pencil, ShieldCheck, Building2, ChevronLeft, User,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import { isOwner } from '../lib/roles';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import SecurityModal from '../components/profile/SecurityModal';
+import CurrencyModal from '../components/profile/CurrencyModal';
 import './Profile.css';
 
-const generalSettings = [
+const generalSettingsBase = [
   { icon: Bell, title: 'העדפות התראות', comingSoon: true },
   { icon: Globe, title: 'שפה', subtitle: 'עברית', comingSoon: true },
-  { icon: CircleDollarSign, title: 'מטבע', subtitle: 'שקל חדש (₪) ILS' },
+  { icon: CircleDollarSign, title: 'מטבע', action: 'currency' },
   { icon: Lock, title: 'אבטחה וסיסמה', action: 'security' },
 ];
 
@@ -28,16 +30,24 @@ const accountActions = [
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const { currencyMeta } = useCurrency();
   const { getBookingsByUserId } = useParking();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
   const userBookings = getBookingsByUserId(user?.id || '');
   const stats = {
     savedParkings: userBookings.filter((b) => b.status === 'saved' || b.status === 'scheduled').length,
     completedParkings: userBookings.filter((b) => b.status === 'completed').length,
   };
   const showPartnerPortal = isOwner(user);
+
+  const generalSettings = generalSettingsBase.map((item) => (
+    item.action === 'currency'
+      ? { ...item, subtitle: currencyMeta.label }
+      : item
+  ));
 
   const handleAction = (item) => {
     if (item.danger) {
@@ -52,6 +62,8 @@ export default function Profile() {
     if (item.comingSoon) return;
     if (item.action === 'security') {
       setSecurityOpen(true);
+    } else if (item.action === 'currency') {
+      setCurrencyOpen(true);
     }
   };
 
@@ -187,6 +199,7 @@ export default function Profile() {
 
       <EditProfileModal isOpen={editOpen} onClose={() => setEditOpen(false)} />
       <SecurityModal isOpen={securityOpen} onClose={() => setSecurityOpen(false)} />
+      <CurrencyModal isOpen={currencyOpen} onClose={() => setCurrencyOpen(false)} />
     </div>
   );
 }

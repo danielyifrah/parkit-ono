@@ -141,15 +141,15 @@ Parkit-Project/
 │   │   ├── layout/      # Layout, Header, BottomNav
 │   │   ├── parking/     # ParkingMap, FilterBar, ParkingCard…
 │   │   ├── booking/     # DateSelector, DurationWheel
-│   │   ├── profile/     # EditProfileModal, SecurityModal
+│   │   ├── profile/     # EditProfileModal, SecurityModal, CurrencyModal
 │   │   ├── support/     # ChatModal
 │   │   ├── ui/          # Button, Input, Modal, Icon…
 │   │   ├── ProtectedRoute.jsx
 │   │   ├── RoleRoute.jsx
 │   │   └── BookingSessionGuard.jsx
-│   ├── context/         # Auth, Parking, GoogleMaps, Header
+│   ├── context/         # Auth, Currency, Parking, GoogleMaps, Header
 │   ├── data/            # mockData.js (seed), supportFaq.js
-│   ├── lib/             # parkingStore, supabaseClient, filters, pricing…
+│   ├── lib/             # parkingStore, currency, supabaseClient, filters, pricing…
 │   ├── hooks/           # useScreenLock
 │   └── styles/          # desktop-layouts.css
 ├── index.html           # lang=he, dir=rtl
@@ -164,11 +164,11 @@ Parkit-Project/
 | `components/` | רכיבים לפי תחום (parking, booking, ui…) |
 | `lib/` | לוגיקה ללא UI — `parkingStore.js` (לוקלי + סנכרון Supabase) |
 | `data/` | seed לוקלי |
-| `context/` | state גלובלי (Auth, Parking, Maps) |
+| `context/` | state גלובלי (Auth, Currency, Parking, Maps) |
 | `supabase/migrations/` | סכמת PostgreSQL + RLS |
 | `docs/` | ERD ותיעוד מודל נתונים |
 
-**קבצים מרכזיים:** `parkingStore.js`, `AuthContext.jsx`, `supabaseClient.js`, `supabaseMappers.js`, `availability.js`.
+**קבצים מרכזיים:** `parkingStore.js`, `currency.js`, `AuthContext.jsx`, `CurrencyContext.jsx`, `supabaseClient.js`, `supabaseMappers.js`, `availability.js`.
 
 ---
 
@@ -188,7 +188,69 @@ Parkit-Project/
 
 **רכיבי הגנה:** `ProtectedRoute` (התחברות), `RoleRoute` (תפקיד), `BookingSessionGuard` (נעילה ל־`/saved` או `/active` בזמן הזמנה).
 
-**localStorage (מצב לוקלי):** `parkit_user`, `parkit_credentials`, `parkit_store_v1`.
+**localStorage (מצב לוקלי):** `parkit_user`, `parkit_credentials`, `parkit_store_v1`, `parkit_currency`, `parkit_fx_rates_v1`.
+
+---
+
+## מטבעות ושערי חליפין
+
+האפליקציה תומכת בתצוגת מחירים ב־**ILS**, **USD** ו־**EUR**. הסכומים במערכת נשמרים תמיד בשקלים (מטבע בסיס); ההמרה היא **לתצוגה בלבד**.
+
+### API
+
+| פרט | ערך |
+|-----|-----|
+| מקור | [ExchangeRate-API Open Access](https://www.exchangerate-api.com/docs/free) — `https://open.er-api.com/v6/latest/ILS` |
+| מפתח API | **לא נדרש** |
+| למה לא Frankfurter? | Frankfurter מבוסס על שערי ECB ואינו מפרסם ILS. נבחר מקור חינמי דומה שתומך בשקל |
+
+### מטבעות נתמכים
+
+| קוד | סימן | שם |
+|-----|------|-----|
+| `ILS` | ₪ | שקל חדש (ברירת מחדל) |
+| `USD` | $ | דולר אמריקאי |
+| `EUR` | € | אירו |
+
+### איך ההמרה עובדת
+
+1. כל `pricePerHour` / `totalPrice` / עמלות במסד וב־store הם **מספרים ב־ILS**.
+2. `formatPrice(amountIls)` ממיר לפי השער הנוכחי ומחזיר מחרוזת עם הסימן המתאים (`₪15`, `$4.05`, `€3.75`).
+3. בחירת מטבע: **פרופיל → מטבע** (`CurrencyModal`).
+4. סינון מחיר נשאר לפי ספי ILS בלוגיקה; התוויות בלבד מומרות לתצוגה.
+5. שדות הזנת מחיר לבעל חניה נשארים ב־₪ (המחיר נשמר תמיד בשקלים).
+
+### Cache ו־Fallback
+
+| שלב | התנהגות |
+|-----|----------|
+| טעינה | קריאת cache מ־`localStorage` (`parkit_fx_rates_v1`) |
+| רענון | אם ה־cache בן פחות מ־**12 שעות** — אין קריאת רשת |
+| API זמין | עדכון שערים + שמירה ל־localStorage |
+| API נכשל + יש cache | שימוש בשער האחרון שנשמר (גם אם ישן) |
+| API נכשל + אין cache | `FALLBACK_RATES` קבועים בקוד — האפליקציה לא קורסת |
+| העדפת מטבע | נשמרת ב־`parkit_currency` ולא מתאפסת ברענון |
+
+### הגדרות סביבה
+
+**אין.** לא נדרש משתנה ב־`.env` לשערי מטבע.
+
+### היכן בקוד
+
+| קובץ | תפקיד |
+|------|--------|
+| `src/lib/currency.js` | API, cache, המרה, `formatPrice`, מטבעות נתמכים |
+| `src/context/CurrencyContext.jsx` | Provider + `useCurrency()` |
+| `src/components/profile/CurrencyModal.jsx` | בחירת מטבע בפרופיל |
+| `src/pages/Profile.jsx` | פתיחת מודל המטבע |
+| מסכי תצוגת מחיר | קוראים ל־`formatPrice` מ־`useCurrency()` |
+
+### הוספת מטבע נוסף
+
+1. הוסיפו ערך ל־`CURRENCIES` ב־`src/lib/currency.js` (קוד, סימן, תווית).
+2. הוסיפו שער ל־`FALLBACK_RATES`.
+3. ב־`fetchExchangeRates` / `getEffectiveRates` — קראו את הקוד החדש מ־`data.rates`.
+4. המודל בפרופיל יציג אותו אוטומטית דרך `SUPPORTED_CURRENCIES`.
 
 ---
 

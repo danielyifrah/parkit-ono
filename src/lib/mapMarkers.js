@@ -10,8 +10,8 @@ function svgToIcon(google, svg, width, height, anchorX, anchorY) {
   };
 }
 
-export function createParkingMarkerIcon(google, price, selected) {
-  const priceText = `₪${price}`;
+export function createParkingMarkerIcon(google, priceLabel, selected) {
+  const priceText = String(priceLabel ?? '');
   const width = Math.max(54, priceText.length * 9 + 28);
   const bubbleFill = selected ? PARKING_PRIMARY : '#ffffff';
   const bubbleStroke = selected ? PARKING_PRIMARY : '#e5e7eb';

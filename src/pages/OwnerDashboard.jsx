@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, LifeBuoy, User, Zap, ArrowUpDown, ArrowUp, ArrowDown, Download, FileText, Settings, Snowflake, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import { getOwnerStats } from '../data/mockData';
 import { toLocalDateStr } from '../lib/bookingPricing';
@@ -108,6 +109,7 @@ function getParkingPerformance(parking, days) {
 export default function OwnerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getParkingsByOwnerId,
     getOwnerParkingDisplayStatus,
@@ -371,8 +373,8 @@ export default function OwnerDashboard() {
             <StatCard
               variant="primary"
               title="הכנסה היום"
-              value={`₪${ownerStats.incomeToday}`}
-              subtitle={`ממוצע: ₪${ownerStats.incomeTodayAvg}`}
+              value={formatPrice(ownerStats.incomeToday)}
+              subtitle={`ממוצע: ${formatPrice(ownerStats.incomeTodayAvg)}`}
             />
             <StatCard
               variant="dark"
@@ -387,7 +389,7 @@ export default function OwnerDashboard() {
             />
             <StatCard
               title="הכנסה החודש"
-              value={`₪${ownerStats.monthlyIncome.toLocaleString()}`}
+              value={formatPrice(ownerStats.monthlyIncome)}
               progress={progress}
             />
           </div>
@@ -468,11 +470,11 @@ export default function OwnerDashboard() {
         <div className="owner-dashboard__report-grid">
           <div className="owner-dashboard__report-card">
             <span>הכנסות ברוטו</span>
-            <strong>₪{Math.round(ownerPerformance.grossIncome).toLocaleString()}</strong>
+            <strong>{formatPrice(Math.round(ownerPerformance.grossIncome))}</strong>
           </div>
           <div className="owner-dashboard__report-card">
             <span>רווח נטו (לאחר 15% עמלה)</span>
-            <strong>₪{Math.round(ownerPerformance.netIncome).toLocaleString()}</strong>
+            <strong>{formatPrice(Math.round(ownerPerformance.netIncome))}</strong>
           </div>
           <div className="owner-dashboard__report-card">
             <span>סה&quot;כ הזמנות</span>
@@ -515,7 +517,7 @@ export default function OwnerDashboard() {
                   </div>
                   <div className="owner-dashboard__report-card">
                     <span>רווח חודשי ממוצע</span>
-                    <strong>₪{stats.avgMonthlyNetIncome.toLocaleString()}</strong>
+                    <strong>{formatPrice(Math.round(stats.avgMonthlyNetIncome))}</strong>
                   </div>
                   <div className="owner-dashboard__report-card">
                     <span>מזמינים שונים / חוזרים</span>

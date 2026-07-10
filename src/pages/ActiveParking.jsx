@@ -9,6 +9,7 @@ import {
   Square,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import { useScreenLock, useWakeLock } from '../hooks/useScreenLock';
 import {
@@ -40,6 +41,7 @@ function getLivePricing(parking, startedAt) {
 export default function ActiveParking() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getActiveBookingByUserId,
     getParkingById,
@@ -169,9 +171,9 @@ export default function ActiveParking() {
             </div>
 
             <p className="active-parking__price-label">חיוב משוער עד כה</p>
-            <p className="active-parking__price">₪{livePrice}</p>
+            <p className="active-parking__price">{formatPrice(livePrice)}</p>
             <span className="active-parking__rate">
-              ₪{parking.pricePerHour} לשעה
+              {formatPrice(parking.pricePerHour)} לשעה
               {liveChargeMinutes > 0 && liveChargeMinutes < MINIMUM_CHARGE_MINUTES + 1 && (
                 <> · מינימום {MINIMUM_CHARGE_MINUTES} דקות</>
               )}
@@ -241,7 +243,7 @@ export default function ActiveParking() {
             </div>
             <div className="active-parking__row-flex">
               <span>תקרת הזמנה</span>
-              <span className="active-parking__pill">₪{activeBooking.totalPrice}</span>
+              <span className="active-parking__pill">{formatPrice(activeBooking.totalPrice)}</span>
             </div>
           </div>
         </div>
@@ -281,7 +283,7 @@ export default function ActiveParking() {
       >
         <div className="active-parking__summary">
           <p className="active-parking__summary-total">
-            סה״כ לתשלום: <strong>₪{summaryPricing?.total ?? livePrice}</strong>
+            סה״כ לתשלום: <strong>{formatPrice(summaryPricing?.total ?? livePrice)}</strong>
           </p>
           {summaryPricing?.chargeMinutes != null && (
             <p className="active-parking__summary-duration">

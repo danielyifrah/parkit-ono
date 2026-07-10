@@ -1,6 +1,7 @@
 import './ParkingCard.css';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Star, Image, MoreVertical, Pencil, BarChart3, ArrowLeft } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useParking } from '../../context/ParkingContext';
 import Button from '../ui/Button';
 import Icon from '../ui/Icon';
@@ -29,6 +30,7 @@ export default function ParkingCard({
   availabilityLabel = 'זמין לחיפוש',
 }) {
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
   const { getOwnerParkingDisplayStatus } = useParking();
 
   if (!parking) return null;
@@ -63,7 +65,7 @@ export default function ParkingCard({
                 {parking.address}
               </p>
               <div className="parking-card__tags">
-                <span className="parking-card__tag">₪{parking.pricePerHour} לשעה</span>
+                <span className="parking-card__tag">{formatPrice(parking.pricePerHour)} לשעה</span>
                 <span className="parking-card__tag">
                   <Icon icon={Clock} size={12} />
                   {parking.walkMinutes} דק&apos; הליכה
@@ -100,7 +102,7 @@ export default function ParkingCard({
             {parking.address}
           </p>
           <div className="parking-card__tags">
-            <span className="parking-card__tag">₪{parking.pricePerHour} לשעה</span>
+            <span className="parking-card__tag">{formatPrice(parking.pricePerHour)} לשעה</span>
             <span className="parking-card__tag">
               <Icon icon={Clock} size={12} />
               {parking.walkMinutes} דק&apos; הליכה
@@ -135,10 +137,10 @@ export default function ParkingCard({
             <h3 className="parking-card__title">{parking.name}</h3>
             <p className="parking-card__address">{parking.address}</p>
             <p className="parking-card__meta">
-              ₪{parking.pricePerHour} / שעה · {parking.covered ? 'מקורה' : 'פתוחה'}
+              {formatPrice(parking.pricePerHour)} / שעה · {parking.covered ? 'מקורה' : 'פתוחה'}
             </p>
             <p className="parking-card__stats">
-              {parking.bookingsToday} הזמנות היום · הכנסה ₪{parking.incomeToday}
+              {parking.bookingsToday} הזמנות היום · הכנסה {formatPrice(parking.incomeToday)}
             </p>
           </div>
           <div className="parking-card__owner-image-wrap">

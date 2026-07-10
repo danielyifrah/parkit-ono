@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import {
   validateBookingSlot,
@@ -27,6 +28,7 @@ export default function Booking() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getParkingById,
     createBooking,
@@ -226,7 +228,7 @@ export default function Booking() {
             <Icon icon={MapPin} size={14} className="app-icon--muted" />
             {parking.address}
           </p>
-          <p className="booking-page__rate">₪{parking.pricePerHour} לשעה</p>
+          <p className="booking-page__rate">{formatPrice(parking.pricePerHour)} לשעה</p>
           <p className="booking-page__availability-hours">
             זמינות: {parking.availabilityHours}
           </p>
@@ -254,7 +256,7 @@ export default function Booking() {
                   date,
                   startTime,
                   createdAt: new Date().toISOString(),
-                })}
+                }, formatPrice)}
               </p>
             )}
           </div>
@@ -286,9 +288,9 @@ export default function Booking() {
             </div>
             <div className="booking-page__total-prices">
               {pricing.discountPercent > 0 && (
-                <span className="booking-page__total-base">₪{pricing.base}</span>
+                <span className="booking-page__total-base">{formatPrice(pricing.base)}</span>
               )}
-              <span className="booking-page__total-price">₪{pricing.total}</span>
+              <span className="booking-page__total-price">{formatPrice(pricing.total)}</span>
             </div>
           </div>
 

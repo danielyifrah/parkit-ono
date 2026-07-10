@@ -15,6 +15,7 @@ export const DEFAULT_FILTERS = {
   duration: 'שעה',
 };
 
+/** Filter thresholds stay in ILS; labels are built with formatPriceOptions. */
 export const PRICE_OPTIONS = [
   { value: null, label: 'כל המחירים' },
   { value: 15, label: 'עד ₪15 לשעה' },
@@ -22,6 +23,15 @@ export const PRICE_OPTIONS = [
   { value: 25, label: 'עד ₪25 לשעה' },
   { value: 30, label: 'עד ₪30 לשעה' },
 ];
+
+export function getPriceOptions(formatPrice) {
+  if (!formatPrice) return PRICE_OPTIONS;
+  return PRICE_OPTIONS.map((opt) => (
+    opt.value == null
+      ? opt
+      : { ...opt, label: `עד ${formatPrice(opt.value)} לשעה` }
+  ));
+}
 
 export const RATING_OPTIONS = [
   { value: null, label: 'כל הדירוגים' },
@@ -143,9 +153,10 @@ export function applyParkingFilters(
   return result;
 }
 
-export function getPriceChipLabel(maxPrice) {
+export function getPriceChipLabel(maxPrice, formatPrice) {
   const option = PRICE_OPTIONS.find((o) => o.value === maxPrice);
-  return option?.value ? `עד ₪${maxPrice}` : 'מחיר';
+  if (!option?.value) return 'מחיר';
+  return formatPrice ? `עד ${formatPrice(maxPrice)}` : `עד ₪${maxPrice}`;
 }
 
 export function getRatingChipLabel(minRating) {

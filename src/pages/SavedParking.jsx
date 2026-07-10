@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookmarkX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import { useScreenLock, useWakeLock } from '../hooks/useScreenLock';
 import { formatCountdown, formatBookingScheduleRtl } from '../lib/availability';
@@ -12,6 +13,7 @@ import './SavedParking.css';
 export default function SavedParking() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getSavedBookingByUserId,
     getParkingById,
@@ -112,7 +114,7 @@ export default function SavedParking() {
             <p className="saved-parking__address">{parking.address}</p>
             <div className="saved-parking__meta">
               <span>מקום: <strong>{parking.spotNumber}</strong></span>
-              <span>מחיר: <strong>₪{parking.pricePerHour} לשעה</strong></span>
+              <span>מחיר: <strong>{formatPrice(parking.pricePerHour)} לשעה</strong></span>
               <span>תשלום: <strong>{savedBooking.paymentMethod}</strong></span>
             </div>
           </div>

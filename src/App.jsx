@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import { ParkingProvider } from './context/ParkingContext';
 import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -90,7 +91,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppRoutes />
+        <CurrencyProvider>
+          <AppRoutes />
+        </CurrencyProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

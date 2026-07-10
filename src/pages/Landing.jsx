@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Icon from '../components/ui/Icon';
+import { useCurrency } from '../context/CurrencyContext';
 import { faqItems } from '../data/supportFaq';
 import './Landing.css';
 
@@ -107,6 +108,7 @@ const LANDING_FAQ = faqItems.slice(0, 5);
 
 export default function Landing() {
   const [openFaqId, setOpenFaqId] = useState(null);
+  const { formatPrice } = useCurrency();
 
   const toggleFaq = (id) => {
     setOpenFaqId((current) => (current === id ? null : id));
@@ -176,9 +178,9 @@ export default function Landing() {
               <div className="landing-map-preview__body">
                 <div className="landing-map-preview__search">חיפוש: דיזנגוף 100, תל אביב</div>
                 <div className="landing-map-preview__pins">
-                  <span className="landing-pin landing-pin--1">₪12/שעה</span>
-                  <span className="landing-pin landing-pin--2">₪8/שעה</span>
-                  <span className="landing-pin landing-pin--3">₪15/שעה</span>
+                  <span className="landing-pin landing-pin--1">{formatPrice(12, { compact: true })}/שעה</span>
+                  <span className="landing-pin landing-pin--2">{formatPrice(8, { compact: true })}/שעה</span>
+                  <span className="landing-pin landing-pin--3">{formatPrice(15, { compact: true })}/שעה</span>
                 </div>
                 <div className="landing-map-preview__card">
                   <strong>חניה פרטית — פלורנטין</strong>

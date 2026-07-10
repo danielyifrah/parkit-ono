@@ -1,5 +1,6 @@
 import './BookingCard.css';
 import { MapPin, Calendar, Clock } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useParking } from '../../context/ParkingContext';
 import Icon from '../ui/Icon';
 
@@ -14,6 +15,7 @@ const statusLabels = {
 
 export default function BookingCard({ booking, onClick }) {
   const { getParkingById } = useParking();
+  const { formatPrice } = useCurrency();
   const parking = getParkingById(booking.parkingId);
   const status = statusLabels[booking.status] || statusLabels.completed;
 
@@ -36,7 +38,7 @@ export default function BookingCard({ booking, onClick }) {
           <Icon icon={Clock} size={14} />
           {booking.startTime} - {booking.endTime}
         </span>
-        <span className="booking-card__price">₪{booking.totalPrice}</span>
+        <span className="booking-card__price">{formatPrice(booking.totalPrice)}</span>
       </div>
     </button>
   );

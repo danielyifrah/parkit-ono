@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Star, Clock, Image, ChevronRight, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useParking } from '../context/ParkingContext';
 import {
   getTodayTomorrowAvailability,
@@ -31,6 +32,7 @@ export default function ParkingDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const {
     getParkingById,
     isParkingPubliclyBlocked,
@@ -172,7 +174,7 @@ export default function ParkingDetails() {
 
             <div className="parking-details__stats">
               <div className="parking-details__stat">
-                <span className="parking-details__stat-value">₪{parking.pricePerHour}</span>
+                <span className="parking-details__stat-value">{formatPrice(parking.pricePerHour)}</span>
                 <span className="parking-details__stat-label">לשעה</span>
               </div>
               <div className="parking-details__stat">

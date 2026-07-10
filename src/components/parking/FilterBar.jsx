@@ -1,10 +1,11 @@
 import { Clock, Banknote, Star, ChevronDown, Home, CircleParking, Building2, SlidersHorizontal } from 'lucide-react';
 import Icon from '../ui/Icon';
+import { useCurrency } from '../../context/CurrencyContext';
 import {
   DURATION_OPTIONS,
-  PRICE_OPTIONS,
   RATING_OPTIONS,
   buildSearchDateOptions,
+  getPriceOptions,
   isFiltersActive,
   isPanelActive,
   normalizeFilters,
@@ -80,7 +81,9 @@ function SearchTimeFields({ filters, onChange }) {
 }
 
 export function FilterFields({ filters, onChange }) {
+  const { formatPrice } = useCurrency();
   const normalized = normalizeFilters(filters);
+  const priceOptions = getPriceOptions(formatPrice);
 
   const setTypes = (type, checked) => {
     onChange({
@@ -99,9 +102,9 @@ export function FilterFields({ filters, onChange }) {
       <div className="filter-fields__section">
         <label className="filter-fields__label">מחיר מקסימלי</label>
         <div className="filter-fields__options">
-          {PRICE_OPTIONS.map((opt) => (
+          {priceOptions.map((opt) => (
             <button
-              key={opt.label}
+              key={String(opt.value)}
               type="button"
               className={`filter-fields__option ${normalized.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
               onClick={() => updateFilters({ maxPrice: opt.value })}
@@ -174,12 +177,14 @@ function TimePanel({ filters, onChange }) {
 }
 
 function PricePanel({ filters, onChange }) {
+  const { formatPrice } = useCurrency();
   const normalized = normalizeFilters(filters);
+  const priceOptions = getPriceOptions(formatPrice);
   return (
     <div className="filter-bar__panel-content filter-fields__options">
-      {PRICE_OPTIONS.map((opt) => (
+      {priceOptions.map((opt) => (
         <button
-          key={opt.label}
+          key={String(opt.value)}
           type="button"
           className={`filter-fields__option ${normalized.maxPrice === opt.value ? 'filter-fields__option--active' : ''}`}
           onClick={() => onChange({ ...normalized, maxPrice: opt.value })}
@@ -223,6 +228,7 @@ export default function FilterBar({
   onClear,
   className = '',
 }) {
+  const { formatPrice } = useCurrency();
   const normalized = normalizeFilters(filters);
   const hasActiveFilters = isFiltersActive(normalized);
 
@@ -232,7 +238,7 @@ export default function FilterBar({
 
   const getChipLabel = (id, defaultLabel) => {
     if (id === 'price' && normalized.maxPrice != null) {
-      return `עד ₪${normalized.maxPrice}`;
+      return `עד ${formatPrice(normalized.maxPrice)}`;
     }
     if (id === 'rating' && normalized.minRating != null) {
       return `${normalized.minRating}+`;
