@@ -1,0 +1,19 @@
+.add-bank-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.add-bank-modal__intro {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  text-align: start;
+  margin-bottom: 4px;
+}
+
+.add-bank-modal__error {
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+  text-align: start;
+}

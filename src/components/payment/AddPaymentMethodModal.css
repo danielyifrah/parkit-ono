@@ -1,0 +1,59 @@
+.add-payment-modal__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.add-payment-modal__tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.add-payment-modal__tab--active {
+  border-color: var(--color-secondary);
+  background: #EFF6FF;
+  color: var(--color-secondary);
+}
+
+.add-payment-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.add-payment-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.add-payment-modal__error {
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+  text-align: start;
+}
+
+.add-payment-modal__wallets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-payment-modal__wallet-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 6px;
+  text-align: start;
+}

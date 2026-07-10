@@ -22,7 +22,7 @@ const generalSettings = [
 
 const accountActions = [
   { icon: Clock, title: 'היסטוריית חניות', path: '/history' },
-  { icon: CreditCard, title: 'אמצעי תשלום' },
+  { icon: CreditCard, title: 'אמצעי תשלום', path: '/profile/payment-methods' },
   { icon: LogOut, title: 'התנתקות', danger: true },
 ];
 

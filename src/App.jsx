@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ParkingProvider } from './context/ParkingContext';
+import { PaymentMethodsProvider } from './context/PaymentMethodsContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import BookingSessionGuard from './components/BookingSessionGuard';
@@ -19,6 +20,7 @@ import ActiveParking from './pages/ActiveParking';
 import History from './pages/History';
 import BookingHistoryDetails from './pages/BookingHistoryDetails';
 import Profile from './pages/Profile';
+import PaymentMethods from './pages/PaymentMethods';
 import Support from './pages/Support';
 import OwnerDashboard from './pages/OwnerDashboard';
 import AddParking from './pages/AddParking';
@@ -36,6 +38,7 @@ function AppRoutes() {
 
   return (
     <ParkingProvider>
+      <PaymentMethodsProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -54,6 +57,7 @@ function AppRoutes() {
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/history/:id" element={<ProtectedRoute><BookingHistoryDetails /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/profile/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
             <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
             <Route
               path="/partner"
@@ -77,6 +81,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </PaymentMethodsProvider>
     </ParkingProvider>
   );
 }

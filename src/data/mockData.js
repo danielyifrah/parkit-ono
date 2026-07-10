@@ -68,6 +68,33 @@ export const users = [
   },
 ];
 
+export const paymentMethods = [
+  {
+    id: 'pm1',
+    userId: 'user-1',
+    category: 'payment',
+    type: 'credit_card',
+    label: 'כרטיס אשראי',
+    brand: 'Visa',
+    lastFour: '4242',
+    isDefault: true,
+    createdAt: '2026-06-01T10:00:00Z',
+  },
+  {
+    id: 'pm2',
+    userId: 'owner-1',
+    category: 'payout',
+    type: 'bank_account',
+    label: 'חשבון בנק',
+    bankName: 'בנק לאומי',
+    bankBranch: '800',
+    lastFour: '5678',
+    accountHolderName: 'דני כהן',
+    isDefault: true,
+    createdAt: '2026-06-01T10:00:00Z',
+  },
+];
+
 export const parkings = [
   {
     id: 'p1',

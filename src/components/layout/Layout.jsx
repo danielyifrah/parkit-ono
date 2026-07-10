@@ -14,6 +14,7 @@ const PAGE_TITLES = {
   '/saved': 'חניה שמורה',
   '/history': 'היסטוריית חניות',
   '/profile': 'פרופיל והגדרות',
+  '/profile/payment-methods': 'אמצעי תשלום',
   '/support': 'מרכז תמיכה',
   '/partner/add': 'הוספת חניה',
 };

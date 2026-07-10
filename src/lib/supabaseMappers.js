@@ -113,6 +113,41 @@ export function bookingFromRow(row) {
   };
 }
 
+export function paymentMethodFromRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    category: row.category,
+    type: row.type,
+    label: row.label,
+    brand: row.brand,
+    lastFour: row.last_four,
+    bankName: row.bank_name,
+    bankBranch: row.bank_branch,
+    accountHolderName: row.account_holder_name,
+    isDefault: row.is_default,
+    createdAt: row.created_at,
+  };
+}
+
+export function paymentMethodToRow(method) {
+  return {
+    id: method.id,
+    user_id: method.userId,
+    category: method.category,
+    type: method.type,
+    label: method.label,
+    brand: method.brand || null,
+    last_four: method.lastFour || null,
+    bank_name: method.bankName || null,
+    bank_branch: method.bankBranch || null,
+    account_holder_name: method.accountHolderName || null,
+    is_default: method.isDefault,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export function bookingToRow(booking) {
   return {
     id: booking.id,
