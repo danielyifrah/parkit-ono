@@ -837,6 +837,29 @@ export function removeParking(parkingId, { bypassAppDisabled = false } = {}) {
   return { ok: true };
 }
 
+/** Local-mode cascade for admin user delete: owned parkings + related bookings. */
+export function purgeLocalUserData(userId) {
+  if (!userId || isSupabaseConfigured()) return { ok: true, removedParkings: 0 };
+
+  const ownedIds = new Set(
+    state.parkings.filter((p) => p.ownerId === userId).map((p) => p.id),
+  );
+  const removedParkings = ownedIds.size;
+
+  state.parkings = state.parkings.filter((p) => p.ownerId !== userId);
+  state.bookings = state.bookings.filter(
+    (b) => b.userId !== userId && !ownedIds.has(b.parkingId),
+  );
+  if (state.profilesById?.[userId]) {
+    const next = { ...state.profilesById };
+    delete next[userId];
+    state.profilesById = next;
+  }
+  persist();
+  notify();
+  return { ok: true, removedParkings };
+}
+
 export function startBooking(bookingId, userId) {
   const booking = findBooking(bookingId);
   if (!booking || booking.userId !== userId || booking.status !== 'saved') {

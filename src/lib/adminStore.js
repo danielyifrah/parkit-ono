@@ -7,6 +7,23 @@ import * as parkingStore from './parkingStore';
 import { AUDIT_ACTIONS, logAdminAction } from './auditLog';
 
 const LOCAL_PROFILES_KEY = 'parkit_admin_profiles';
+const LOCAL_DELETED_PROFILES_KEY = 'parkit_admin_deleted_profiles';
+
+function getLocalDeletedProfileIds() {
+  try {
+    const raw = localStorage.getItem(LOCAL_DELETED_PROFILES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(list) ? list : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markLocalProfileDeleted(profileId) {
+  const ids = getLocalDeletedProfileIds();
+  ids.add(profileId);
+  localStorage.setItem(LOCAL_DELETED_PROFILES_KEY, JSON.stringify([...ids]));
+}
 
 function seedProfiles() {
   return seedUsers.map((u) => ({
@@ -25,9 +42,10 @@ function seedProfiles() {
 
 function loadLocalProfiles() {
   const base = seedProfiles();
+  const deleted = getLocalDeletedProfileIds();
   try {
     const raw = localStorage.getItem(LOCAL_PROFILES_KEY);
-    if (!raw) return base;
+    if (!raw) return base.filter((p) => !deleted.has(p.id));
     const overrides = JSON.parse(raw);
     const byId = Object.fromEntries(base.map((p) => [p.id, p]));
     (overrides || []).forEach((p) => {
@@ -52,9 +70,9 @@ function loadLocalProfiles() {
     } catch {
       /* ignore */
     }
-    return Object.values(byId);
+    return Object.values(byId).filter((p) => !deleted.has(p.id));
   } catch {
-    return base;
+    return base.filter((p) => !deleted.has(p.id));
   }
 }
 
@@ -244,6 +262,94 @@ export async function setUserSuspended(profileId, { suspended, reason = '', acto
   });
 
   return { ok: true, profile };
+}
+
+export async function deleteUser(profileId, { actor } = {}) {
+  if (!profileId) return { ok: false, error: 'משתמש לא נמצא' };
+  if (actor?.id && actor.id === profileId) {
+    return { ok: false, error: 'לא ניתן למחוק את עצמך' };
+  }
+
+  if (!isSupabaseConfigured()) {
+    const profiles = loadLocalProfiles();
+    const idx = profiles.findIndex((p) => p.id === profileId);
+    if (idx < 0) return { ok: false, error: 'משתמש לא נמצא' };
+    if (profiles[idx].role === USER_ROLES.ADMIN) {
+      return { ok: false, error: 'לא ניתן למחוק מנהל מערכת' };
+    }
+
+    const removed = profiles[idx];
+    const next = profiles.filter((p) => p.id !== profileId);
+    saveLocalProfiles(next);
+    markLocalProfileDeleted(profileId);
+
+    const purge = parkingStore.purgeLocalUserData(profileId);
+    const parkingNote = purge.removedParkings > 0
+      ? ` כולל ${purge.removedParkings} חניות`
+      : '';
+
+    await logAdminAction({
+      actor,
+      actionType: AUDIT_ACTIONS.user_deleted.value,
+      summary: `${actor?.name || 'מנהל'} מחק את המשתמש ${removed.name}${parkingNote}`,
+      entityType: 'user',
+      entityLabel: removed.name,
+    });
+
+    return { ok: true, profile: removed, removedParkings: purge.removedParkings };
+  }
+
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id, name, role')
+    .eq('id', profileId)
+    .maybeSingle();
+
+  if (!existing) return { ok: false, error: 'משתמש לא נמצא' };
+  if (existing.role === USER_ROLES.ADMIN) {
+    return { ok: false, error: 'לא ניתן למחוק מנהל מערכת' };
+  }
+
+  const { count: parkingCount } = await supabase
+    .from('parkings')
+    .select('id', { count: 'exact', head: true })
+    .eq('owner_id', profileId);
+
+  const { error } = await supabase.rpc('admin_delete_user', {
+    target_user_id: profileId,
+  });
+
+  if (error) {
+    console.error('Delete user failed', error);
+    const message = error.message || '';
+    if (message.includes('cannot delete yourself')) {
+      return { ok: false, error: 'לא ניתן למחוק את עצמך' };
+    }
+    if (message.includes('cannot delete admin')) {
+      return { ok: false, error: 'לא ניתן למחוק מנהל מערכת' };
+    }
+    if (message.includes('not authorized')) {
+      return { ok: false, error: 'אין הרשאה למחיקה' };
+    }
+    return { ok: false, error: 'מחיקת המשתמש נכשלה' };
+  }
+
+  const removedParkings = parkingCount || 0;
+  const parkingNote = removedParkings > 0 ? ` כולל ${removedParkings} חניות` : '';
+
+  await logAdminAction({
+    actor,
+    actionType: AUDIT_ACTIONS.user_deleted.value,
+    summary: `${actor?.name || 'מנהל'} מחק את המשתמש ${existing.name}${parkingNote}`,
+    entityType: 'user',
+    entityLabel: existing.name,
+  });
+
+  return {
+    ok: true,
+    profile: { id: existing.id, name: existing.name, role: existing.role },
+    removedParkings,
+  };
 }
 
 function startOfLocalDay(date = new Date()) {

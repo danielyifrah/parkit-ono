@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, Pencil, Search, UserCheck } from 'lucide-react';
-import { fetchAllProfiles, setUserSuspended, updateAdminProfile } from '../../lib/adminStore';
+import { Ban, Pencil, Search, Trash2, UserCheck } from 'lucide-react';
+import { deleteUser, fetchAllProfiles, setUserSuspended, updateAdminProfile } from '../../lib/adminStore';
 import { USER_ROLES } from '../../lib/roles';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
@@ -38,6 +38,9 @@ export default function AdminUsers() {
   const [suspendReason, setSuspendReason] = useState('');
   const [suspendWorking, setSuspendWorking] = useState(false);
   const [suspendError, setSuspendError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteWorking, setDeleteWorking] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +75,10 @@ export default function AdminUsers() {
       );
     });
   }, [profiles, query, roleFilter]);
+
+  const canModerate = (profile) => (
+    profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id
+  );
 
   const openEdit = (profile) => {
     setEditing(profile);
@@ -132,12 +139,105 @@ export default function AdminUsers() {
     setSuspendReason('');
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleteWorking(true);
+    setDeleteError('');
+
+    const result = await deleteUser(deleteTarget.id, { actor: currentUser });
+    setDeleteWorking(false);
+
+    if (!result.ok) {
+      setDeleteError(result.error || 'המחיקה נכשלה');
+      return;
+    }
+
+    setProfiles((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+    setDeleteTarget(null);
+  };
+
+  const renderRowActions = (profile) => (
+    <div className="admin-table__actions">
+      <button
+        type="button"
+        className="admin-table__action"
+        onClick={() => openEdit(profile)}
+        aria-label={`עריכת ${profile.name}`}
+      >
+        <Icon icon={Pencil} size={16} />
+      </button>
+      {canModerate(profile) && (
+        <>
+          <button
+            type="button"
+            className="admin-table__action"
+            onClick={() => {
+              setSuspendTarget(profile);
+              setSuspendReason(profile.suspendedReason || '');
+              setSuspendError('');
+            }}
+            aria-label={profile.suspended ? `ביטול השעיה של ${profile.name}` : `השעיית ${profile.name}`}
+          >
+            <Icon icon={profile.suspended ? UserCheck : Ban} size={16} />
+          </button>
+          <button
+            type="button"
+            className="admin-table__action"
+            onClick={() => {
+              setDeleteTarget(profile);
+              setDeleteError('');
+            }}
+            aria-label={`מחיקת ${profile.name}`}
+          >
+            <Icon icon={Trash2} size={16} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  const renderCardActions = (profile) => (
+    <div className="admin-parking-card__actions">
+      <Button size="sm" variant="secondary" onClick={() => openEdit(profile)}>
+        <Icon icon={Pencil} size={14} />
+        עריכה
+      </Button>
+      {canModerate(profile) && (
+        <>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setSuspendTarget(profile);
+              setSuspendReason(profile.suspendedReason || '');
+              setSuspendError('');
+            }}
+          >
+            <Icon icon={profile.suspended ? UserCheck : Ban} size={14} />
+            {profile.suspended ? 'ביטול השעיה' : 'השעיה'}
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => {
+              setDeleteTarget(profile);
+              setDeleteError('');
+            }}
+          >
+            <Icon icon={Trash2} size={14} />
+            מחיקה
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="admin-page">
       <header className="admin-page__header">
         <h1 className="admin-page__title">ניהול משתמשים</h1>
         <p className="admin-page__subtitle">
-          עריכת פרטים, שינוי תפקיד והשעיה. משתמש מושעה לא יכול להתחבר. פרטי אשראי אינם זמינים.
+          עריכת פרטים, שינוי תפקיד, השעיה ומחיקה. משתמש מושעה לא יכול להתחבר. מחיקת בעל חניה מסירה גם את החניות שלו.
         </p>
       </header>
 
@@ -207,32 +307,7 @@ export default function AdminUsers() {
                           <span className="admin-status-pill admin-status-pill--ok">פעיל</span>
                         )}
                       </td>
-                      <td>
-                        <div className="admin-table__actions">
-                          <button
-                            type="button"
-                            className="admin-table__action"
-                            onClick={() => openEdit(profile)}
-                            aria-label={`עריכת ${profile.name}`}
-                          >
-                            <Icon icon={Pencil} size={16} />
-                          </button>
-                          {profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id && (
-                            <button
-                              type="button"
-                              className="admin-table__action"
-                              onClick={() => {
-                                setSuspendTarget(profile);
-                                setSuspendReason(profile.suspendedReason || '');
-                                setSuspendError('');
-                              }}
-                              aria-label={profile.suspended ? `ביטול השעיה של ${profile.name}` : `השעיית ${profile.name}`}
-                            >
-                              <Icon icon={profile.suspended ? UserCheck : Ban} size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                      <td>{renderRowActions(profile)}</td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
@@ -284,26 +359,7 @@ export default function AdminUsers() {
                       </dd>
                     </div>
                   </dl>
-                  <div className="admin-parking-card__actions">
-                    <Button size="sm" variant="secondary" onClick={() => openEdit(profile)}>
-                      <Icon icon={Pencil} size={14} />
-                      עריכה
-                    </Button>
-                    {profile.role !== USER_ROLES.ADMIN && profile.id !== currentUser?.id && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setSuspendTarget(profile);
-                          setSuspendReason(profile.suspendedReason || '');
-                          setSuspendError('');
-                        }}
-                      >
-                        <Icon icon={profile.suspended ? UserCheck : Ban} size={14} />
-                        {profile.suspended ? 'ביטול השעיה' : 'השעיה'}
-                      </Button>
-                    )}
-                  </div>
+                  {renderCardActions(profile)}
                 </article>
               ))}
               {filtered.length === 0 && (
@@ -393,6 +449,43 @@ export default function AdminUsers() {
                 {suspendWorking
                   ? 'מעדכן...'
                   : (suspendTarget.suspended ? 'ביטול השעיה' : 'השעיה')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        title="מחיקת משתמש"
+        isOpen={!!deleteTarget}
+        onClose={() => !deleteWorking && setDeleteTarget(null)}
+      >
+        {deleteTarget && (
+          <div className="admin-form">
+            <p>
+              למחוק את
+              {' '}
+              <strong>{deleteTarget.name}</strong>
+              {' '}
+              לצמיתות? פעולה זו אינה הפיכה.
+            </p>
+            {deleteTarget.role === USER_ROLES.OWNER && (
+              <p className="admin-page__muted">
+                כל החניות שבבעלותו/ה יימחקו יחד עם ההזמנות הקשורות אליהן.
+              </p>
+            )}
+            {deleteTarget.role === USER_ROLES.DRIVER && (
+              <p className="admin-page__muted">
+                גם הזמנות ואמצעי תשלום של המשתמש יימחקו.
+              </p>
+            )}
+            {deleteError && <p className="admin-page__error">{deleteError}</p>}
+            <div className="admin-form__actions">
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleteWorking}>
+                חזרה
+              </Button>
+              <Button variant="danger" onClick={handleDeleteConfirm} disabled={deleteWorking}>
+                {deleteWorking ? 'מוחק...' : 'מחיקה לצמיתות'}
               </Button>
             </div>
           </div>

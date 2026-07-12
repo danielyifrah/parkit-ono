@@ -10,7 +10,7 @@ import '../AdminDashboard.css';
 
 const FILTERS = [
   { value: 'all', label: 'הכל' },
-  { value: 'users', label: 'משתמשים', types: ['user_updated', 'user_role_changed', 'user_suspended', 'user_unsuspended'] },
+  { value: 'users', label: 'משתמשים', types: ['user_updated', 'user_role_changed', 'user_suspended', 'user_unsuspended', 'user_deleted'] },
   { value: 'parkings', label: 'חניות', types: ['parking_updated', 'parking_frozen', 'parking_unfrozen', 'parking_removed'] },
   { value: 'bookings', label: 'הזמנות', types: ['booking_cancelled', 'booking_refunded'] },
   { value: 'app', label: 'אפליקציה', types: ['app_disabled', 'app_enabled'] },

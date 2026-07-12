@@ -69,7 +69,9 @@ Parkit היא **שוק דו-צדדי** לחניות — לא אפליקציית 
 | רכיב | טכנולוגיה |
 |------|-----------|
 | Frontend | React 19, Vite 8, React Router 7 |
-| מפות | Google Maps + Places API |
+| מפות | Google Maps JavaScript API + Places API |
+| Auth | Supabase Auth (אימייל/סיסמה + Google OAuth) |
+| שערי מטבע | ExchangeRate-API Open Access (`open.er-api.com`) |
 | עיצוב | CSS (גלובלי + לפי קומפוננטה), Rubik, lucide-react |
 | נתונים (לוקלי) | `mockData.js` (seed) + `parkingStore.js` (localStorage) |
 | Backend | **Supabase** — Auth, PostgreSQL, Row Level Security |
@@ -77,18 +79,84 @@ Parkit היא **שוק דו-צדדי** לחניות — לא אפליקציית 
 
 ---
 
+## אינטגרציות חיצוניות
+
+שלושה שירותים חיצוניים. הטבלה מסכמת **מה נמצא בצד הלקוח** ו**איך סודות מוגנים**:
+
+| שירות | תפקיד באפליקציה | מה בצד הלקוח | סוד / מפתח פרטי | הערות אבטחה |
+|--------|------------------|---------------|-----------------|-------------|
+| **[Google Maps Platform](https://maps.google.com/)** | מפה, סיכות מחיר, חיפוש כתובות (Places) | `VITE_GOOGLE_MAPS_API_KEY` | אין — מפתח דפדפן בלבד | מפתח Maps **חייב** להיטען בדפדפן (JS API). הגנה: הגבלות HTTP referrer + APIs ב-Google Cloud (לא Edge Function) |
+| **[Google OAuth](https://developers.google.com/identity)** דרך Supabase | כניסה עם Google | רק `signInWithOAuth({ provider: 'google' })` — בלי Client ID/Secret בקוד | **Client Secret** נשמר רק ב-Supabase Dashboard → Auth → Providers → Google | לעולם לא `VITE_GOOGLE_CLIENT_SECRET`. בלי Supabase — כניסת דמו מקומית |
+| **[ExchangeRate-API](https://www.exchangerate-api.com/docs/free)** | שערי ILS→USD/EUR לתצוגה | קריאה ל־`https://open.er-api.com/v6/latest/ILS` | **אין מפתח** בתוכנית החינמית | אם בעתיד יוחלף ב-API בתשלום עם מפתח — חובה Edge Function / שרת; לא `VITE_*` |
+
+### Google Maps
+
+| פרט | ערך |
+|-----|-----|
+| APIs נדרשים | Maps JavaScript API, Places API |
+| משתנה | `VITE_GOOGLE_MAPS_API_KEY` ב־`.env.local` |
+| קוד | `src/lib/googleMapsConfig.js`, `src/context/GoogleMapsContext.jsx` |
+| למה לא Edge Function? | `@react-google-maps/api` טוען את הסקריפט של Google בדפדפן — המפתח חייב להיות זמין ללקוח. הסתרה בשרת לא מונעת חשיפה |
+
+**הגדרה ב-Google Cloud (חובה בפרודקשן):**
+1. צור מפתח API והפעל Maps JavaScript API + Places API
+2. הגבל **Application restrictions** ל־HTTP referrers (`http://localhost:5173/*`, דומיין הפרודקשן)
+3. הגבל **API restrictions** לשני ה־APIs בלבד
+4. הגדר תקציב / התראות חיוב
+
+### Google Auth (OAuth)
+
+| פרט | ערך |
+|-----|-----|
+| זרימה | לקוח → Supabase Auth → Google → redirect חזרה לאפליקציה |
+| קוד | `loginWithGoogle()` ב־`src/context/AuthContext.jsx` |
+| Client ID / Secret | מוגדרים ב-Supabase Dashboard בלבד — **לא** ב־`.env` של Vite ולא ב-repo |
+| Redirect | `${origin}/` — יש להוסיף את ה-URL ב-Supabase → Authentication → URL Configuration |
+
+**הגדרה (עם Supabase):**
+1. Google Cloud Console → OAuth 2.0 Client (Web) — העתק Client ID + Client Secret
+2. Supabase → Authentication → Providers → Google — הדבק את הערכים והפעל
+3. ב-Google: Authorized redirect URI = ה-URL שמוצג ב-Supabase (callback של Supabase)
+4. בפרויקט: ודא `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` ב־`.env.local`
+
+בלי Supabase מוגדר — הכפתור יוצר משתמש דמו מקומי (לא OAuth אמיתי).
+
+### שערי מטבע (ExchangeRate-API)
+
+| פרט | ערך |
+|-----|-----|
+| מקור | Open Access — `https://open.er-api.com/v6/latest/ILS` |
+| מפתח | לא נדרש |
+| למה לא Frankfurter? | ECB / Frankfurter לא מפרסמים ILS |
+| קוד | `src/lib/currency.js`, `src/context/CurrencyContext.jsx` |
+| Cache | `localStorage` (`parkit_fx_rates_v1`), TTL 12 שעות + `FALLBACK_RATES` |
+
+פירוט מלא: [מטבעות ושערי חליפין](#מטבעות-ושערי-חליפין).
+
+### מפתחות וסודות — כללים
+
+| סוג | דוגמה | איפה | כלל |
+|-----|--------|------|-----|
+| ציבורי (דפדפן) | `VITE_GOOGLE_MAPS_API_KEY`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_URL` | `.env.local` → נארז ב-build | מותר בצד לקוח; הגן עם הגבלות מפתח / RLS |
+| סודי (שרת בלבד) | Google OAuth Client Secret, Supabase `service_role`, סיסמת DB | Dashboard / CI secrets / לא `VITE_*` | לעולם לא בקוד הלקוח ולא ב-Git |
+| ללא מפתח | FX open endpoint | URL קבוע ב־`currency.js` | אם יוחלף ב-API עם מפתח → Edge Function |
+
+> `.env.local` ב־`.gitignore`. אין `service_role` ב־`src/`. אין Edge Functions כרגע — אין סוד שדורש פרוקסי לשרת.
+
+---
+
 ## התקנה והפעלה
 
 **דרישות:** Node.js 18+, מפתח Google Maps (Maps JavaScript API + Places API).  
-**אופציונלי:** פרויקט Supabase + מפתחות ב־`.env.local` (ראו [הגדרת Supabase](#supabase-מיושם)).
+**אופציונלי:** פרויקט Supabase + מפתחות ב־`.env.local` (ראו [אינטגרציות](#אינטגרציות-חיצוניות) ו־[הגדרת Supabase](#supabase--הגדרה)).
 
 ```bash
 git clone <repository-url>
 cd Parkit-Project
 npm install
-cp .env.example .env.local
-# ערוך .env.local — הוסף לפחות VITE_GOOGLE_MAPS_API_KEY
-# אופציונלי: VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+# צור .env.local עם לפחות:
+#   VITE_GOOGLE_MAPS_API_KEY=...
+# אופציונלי: VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (+ Google OAuth ב-Dashboard)
 npm run dev                  # http://localhost:5173
 ```
 
@@ -155,7 +223,7 @@ Parkit-Project/
 ├── index.html           # lang=he, dir=rtl
 ├── vite.config.js
 ├── package.json
-└── .env.example
+└── .env.local           # מקומי, ב-.gitignore
 ```
 
 | תיקייה | תפקיד |
@@ -233,7 +301,7 @@ Parkit-Project/
 
 ### הגדרות סביבה
 
-**אין.** לא נדרש משתנה ב־`.env` לשערי מטבע.
+**אין.** לא נדרש משתנה ב־`.env` לשערי מטבע (ראו גם [אינטגרציות — שערי מטבע](#שערי-מטבע-exchangerate-api)).
 
 ### היכן בקוד
 
@@ -340,7 +408,7 @@ npm run db:setup
 | תחום | מגבלה |
 |------|--------|
 | תשלום | אין סליקה — שיטת תשלום מוצגת בלבד |
-| Google OAuth | כניסה מדומה (משתמש דמו) |
+| Google OAuth | אמיתי כש-Supabase + Provider מוגדרים; בלי Supabase — משתמש דמו מקומי |
 | תמונות | Pexels / base64; Supabase Storage — בעתיד |
 | סטטיסטיקות בעלים | נוסחאות מ-seed, לא מצבירת bookings אמיתית |
 | סנכרון לוקלי | ללא Supabase — נתונים רק בדפדפן הנוכחי |
@@ -360,12 +428,14 @@ npm run db:setup
 |------|--------|
 | מפה לא נטענת | בדוק `VITE_GOOGLE_MAPS_API_KEY` ב־`.env.local`, הפעל Maps + Places API, הפעל מחדש `npm run dev` |
 | חיפוש כתובת נכשל | ודא Places API פעיל (מוגבל לישראל) |
+| Google OAuth נכשל | ודא Provider ב-Supabase, Client ID/Secret, Redirect URLs, ו־`VITE_SUPABASE_*` |
+| שערי מטבע לא מתעדכנים | בדוק רשת ל־`open.er-api.com`; האפליקציה תשתמש ב-cache / fallback |
 | שגיאה בטעינת נתונים מ-Supabase | בדוק מיגרציות, מפתחות ב־`.env.local`, לחץ "נסו שוב" באפליקציה |
 | תמונות לא מוצגות | בדוק אינטרנט וכתובות Pexels ב־`mockData.js` |
 | נתונים ישנים (לוקלי) | מחק `parkit_store_v1` מ-localStorage; התנתק והתחבר מחדש |
 
 ---
 
-פרויקט לימודי / דמו · תמונות: [Pexels](https://www.pexels.com/) · מפות: [Google Maps Platform](https://maps.google.com/)
+פרויקט לימודי / דמו · תמונות: [Pexels](https://www.pexels.com/) · מפות: [Google Maps Platform](https://maps.google.com/) · Auth: [Google Identity](https://developers.google.com/identity) via Supabase · FX: [ExchangeRate-API](https://www.exchangerate-api.com/)
 
 **גרסה:** 0.0.0 (MVP) · **שפה:** עברית (RTL) · **אזור:** תל אביב

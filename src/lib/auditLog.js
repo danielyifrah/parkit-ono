@@ -8,6 +8,7 @@ export const AUDIT_ACTIONS = {
   user_role_changed: { value: 'user_role_changed', label: 'שינוי תפקיד' },
   user_suspended: { value: 'user_suspended', label: 'השעיית משתמש' },
   user_unsuspended: { value: 'user_unsuspended', label: 'ביטול השעיה' },
+  user_deleted: { value: 'user_deleted', label: 'מחיקת משתמש' },
   parking_updated: { value: 'parking_updated', label: 'עריכת חניה' },
   parking_frozen: { value: 'parking_frozen', label: 'הקפאת חניה' },
   parking_unfrozen: { value: 'parking_unfrozen', label: 'הפשרת חניה' },

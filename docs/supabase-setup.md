@@ -48,7 +48,23 @@ VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-> אלה מפתחות **ציבוריים** (anon key) — בטוחים בצד לקוח. לא לשתף את `service_role` key.
+> אלה מפתחות **ציבוריים** (anon key) — בטוחים בצד לקוח. לא לשתף את `service_role` key.  
+> **Google OAuth Client Secret** לא שייך ל־`.env.local` — רק ל-Dashboard (שלב 2ב).
+
+---
+
+## שלב 2ב — Google OAuth (אופציונלי)
+
+כניסה עם Google עוברת דרך **Supabase Auth** — ה-Client Secret נשאר בשרת של Supabase, לא בקוד React.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → **OAuth 2.0 Client ID** (Web application)
+2. ב-Supabase: **Authentication → Providers → Google** — הדבק Client ID + **Client Secret**, הפעל את הספק
+3. העתק מ-Supabase את **Callback URL** והוסף אותו ב-Google תחת Authorized redirect URIs
+4. ב-Supabase: **Authentication → URL Configuration** — הוסף `http://localhost:5173` (ודומיין פרודקשן) ל-Redirect URLs
+
+בקוד: `AuthContext.loginWithGoogle()` קורא ל־`supabase.auth.signInWithOAuth({ provider: 'google' })` בלבד — בלי סודות.
+
+פירוט מלא על כל האינטגרציות: [README — אינטגרציות חיצוניות](../README.md#אינטגרציות-חיצוניות).
 
 ---
 
@@ -126,5 +142,6 @@ npm run dev
 |------|--------|
 | "שגיאה בטעינת נתונים מהשרת" | הרץ מיגרציות (שלב 3) |
 | Login נכשל ב-Supabase | השתמש ב-`demo1234` או הרשם משתמש חדש |
+| Google OAuth נכשל | ודא Provider מופעל, Client Secret ב-Dashboard, Redirect URLs תואמים |
 | `npm run db:setup` נכשל | בדוק סיסמת DB ו-`SUPABASE_PROJECT_REF` |
 | "relation already exists" | המיגרציה כבר רצה — זה בסדר, אפשר לדלג |
