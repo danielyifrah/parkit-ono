@@ -356,9 +356,12 @@ Parkit-Project/
 
 | טבלה | תפקיד | קשרים |
 |------|--------|--------|
-| `profiles` | פרופיל משתמש (תפקיד, פרטים) | 1:1 עם `auth.users` |
+| `profiles` | פרופיל משתמש (תפקיד, השעיה) | 1:1 עם `auth.users` |
 | `parkings` | חניות שמפורסמות | `owner_id` → `profiles` |
 | `bookings` | הזמנות חניה | `user_id` → `profiles`, `parking_id` → `parkings` |
+| `payment_methods` | כרטיסים / ארנקים / חשבון בנק | `user_id` → `profiles` |
+| `app_settings` | הקפאת הזמנות (singleton) | `updated_by` → `profiles` |
+| `admin_activity_log` | יומן פעולות מנהל | `actor_id` → `profiles` |
 
 **ERD מלא:** [docs/erd.md](docs/erd.md) · [docs/erd.png](docs/erd.png)
 
@@ -375,10 +378,11 @@ Parkit-Project/
 
 ### מה זה מיגרציות? (בקצרה)
 
-**מיגרציה** = קובץ SQL שבונה את מסד הנתונים ב-Supabase:
-- יוצר את הטבלאות (`profiles`, `parkings`, `bookings`)
-- מגדיר הרשאות (RLS)
+**מיגרציה** = קובץ SQL שבונה / מעדכן את מסד הנתונים ב-Supabase:
+- יוצר טבלאות, RLS, triggers ו-RPC
 - מכניס נתוני דמו
+
+יש **12 מיגרציות** — חובה להריץ את כולן לפי סדר (או `npm run db:setup`). פירוט: [docs/supabase-setup.md](docs/supabase-setup.md).
 
 **בלי מיגרציות:** יש מפתחות Supabase אבל אין טבלאות → האפליקציה מציגה שגיאת טעינה.  
 **אחרי מיגרציות:** Backend אמיתי — התחברות, חניות והזמנות נשמרים בענן.
@@ -398,13 +402,10 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 
 ### 2. הרצת מיגרציות (חובה, פעם אחת)
 
-**דרך א — Dashboard (הכי פשוט):**  
-Supabase → **SQL Editor** → העתק והרץ לפי סדר:
-1. `supabase/migrations/20260708180000_initial_schema.sql`
-2. `supabase/migrations/20260708200000_public_parkings_rls.sql`
-3. `supabase/migrations/20260709120000_tighten_rls.sql`
+**דרך א — Dashboard:**  
+Supabase → **SQL Editor** → הרץ לפי סדר תאריך את כל 12 הקבצים ב־`supabase/migrations/` (רשימה מלאה ב־[docs/supabase-setup.md](docs/supabase-setup.md)).
 
-**דרך ב — טרמינל:**
+**דרך ב — טרמינל (מומלץ):**
 
 <div dir="ltr" align="left">
 
@@ -420,7 +421,7 @@ npm run db:setup
 
 ### 3. אימות
 
-- **Dashboard → Table Editor:** `profiles` (3), `parkings` (5), `bookings` (8)
+- **Dashboard → Table Editor:** `profiles` (3), `parkings` (5), `bookings` (8), `payment_methods`, `app_settings`, `admin_activity_log`
 - **באפליקציה:** התחבר `israel@example.com` / `demo1234` — חניות במפה, בלי שגיאת טעינה
 
 ---

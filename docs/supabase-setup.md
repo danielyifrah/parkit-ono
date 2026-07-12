@@ -4,16 +4,17 @@
 
 **Supabase** הוא שירות ענן שנותן לפרויקט:
 - **מסד נתונים** (PostgreSQL) — טבלאות אמיתיות בענן
-- **התחברות משתמשים** (Auth) — login/register אמיתי
+- **התחברות משתמשים** (Auth) — login/register אמיתי (כולל Google OAuth)
 - **אבטחה** (RLS) — מי רשאי לראות/לשנות מה
 
-**מיגרציה (Migration)** היא קובץ SQL שבונה את מבנה ה-DB בפעם הראשונה:
-- יוצר טבלאות (`profiles`, `parkings`, `bookings`)
-- מגדיר קשרים ביניהן (מי בעלים של מה)
-- מפעיל RLS (הרשאות)
-- מכניס נתוני דמו (3 משתמשים, 5 חניות, 8 הזמנות)
+**מיגרציה (Migration)** היא קובץ SQL שבונה / מעדכן את מבנה ה-DB:
+- יוצר טבלאות (`profiles`, `parkings`, `bookings`, `payment_methods`, `app_settings`, `admin_activity_log`)
+- מגדיר קשרים, RLS, triggers ו-RPC
+- מכניס נתוני דמו (משתמשים, חניות, הזמנות, אמצעי תשלום)
 
 > **אנלוגיה:** המיגרציה היא כמו "תוכנית בנייה" לדאטאבייס. בלי להריץ אותה — אין טבלאות, והאפליקציה לא יכולה לשמור נתונים בענן.
+
+**מודל הנתונים המלא:** [erd.md](erd.md)
 
 ---
 
@@ -25,7 +26,7 @@
 | **עם מפתחות Supabase, בלי מיגרציות** | האפליקציה מנסה להתחבר ל-DB ריק → **שגיאת טעינה** (באנר אדום "שגיאה בטעינת נתונים מהשרת"). |
 | **עם מפתחות + מיגרציות הורצו** | ✅ התחברות אמיתית, נתונים בענן, סנכרון בין מכשירים, נשמר גם אחרי ניקוי cache. |
 
-**לסיכום:** אם אתה רוצה שהמרצה יראה Backend אמיתי — צריך גם מפתחות Supabase **וגם** להריץ מיגרציות.
+**לסיכום:** אם אתה רוצה שהמרצה יראה Backend אמיתי — צריך גם מפתחות Supabase **וגם** להריץ **את כל** המיגרציות.
 
 ---
 
@@ -72,18 +73,15 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 יש **שתי דרכים**. בחר אחת:
 
-### דרך א — Supabase Dashboard (הכי פשוט, מומלץ)
+### דרך א — Supabase Dashboard
 
 1. ב-Supabase: **SQL Editor** → **New query**
-2. פתח בפרויקט את הקובץ:
-   `supabase/migrations/20260708180000_initial_schema.sql`
-3. העתק את **כל** התוכן → הדבק ב-SQL Editor → **Run**
-4. חזור על אותו דבר לקובץ השני:
-   `supabase/migrations/20260708200000_public_parkings_rls.sql` → **Run**
-5. חזור על אותו דבר לקובץ השלישי:
-   `supabase/migrations/20260709120000_tighten_rls.sql` → **Run**
+2. הרץ **לפי סדר התאריך** את כל קבצי `supabase/migrations/*.sql` (12 קבצים) — אחד אחרי השני
+3. רשימה מלאה בטבלה למטה
 
-### דרך ב — מהטרמינל (`npm run db:setup`)
+> אם הפרויקט כבר רץ חלקית — הרץ רק מיגרציות שטרם הורצו. אל תדלג על קבצים באמצע.
+
+### דרך ב — מהטרמינל (`npm run db:setup`) — מומלץ
 
 1. ב-Supabase: **Project Settings → Database** → העתק:
    - Database password (שהגדרת ביצירת הפרויקט)
@@ -104,10 +102,13 @@ npm run db:setup
 
 ### ב-Supabase Dashboard
 
-**Table Editor** — אמורות להופיע 3 טבלאות:
-- `profiles` (3 שורות)
+**Table Editor** — אמורות להופיע 6 טבלאות ב־`public`:
+- `profiles` (3 שורות דמו)
 - `parkings` (5 שורות)
 - `bookings` (8 שורות)
+- `payment_methods` (לפחות 2 שורות דמו)
+- `app_settings` (שורה אחת: `global`)
+- `admin_activity_log` (ריקה בהתחלה)
 
 **Authentication → Users** — 3 משתמשי דמו:
 - `israel@example.com`
@@ -130,9 +131,18 @@ npm run dev
 
 | קובץ | מה הוא עושה |
 |------|-------------|
-| `20260708180000_initial_schema.sql` | יוצר טבלאות, אינדקסים, RLS בסיסי, trigger לפרופיל, seed data |
-| `20260708200000_public_parkings_rls.sql` | מאפשר קריאה ציבורית לחניות (למפה) |
-| `20260709120000_tighten_rls.sql` | מחמיר RLS: פרופיל עצמי, הזמנות מוגבלות, חניות active לציבור |
+| `20260708180000_initial_schema.sql` | טבלאות ליבה, אינדקסים, RLS בסיסי, trigger לפרופיל, seed |
+| `20260708200000_public_parkings_rls.sql` | קריאה ציבורית לחניות (למפה) |
+| `20260709120000_tighten_rls.sql` | החמרת RLS: פרופיל עצמי, הזמנות מוגבלות |
+| `20260710120000_payment_methods.sql` | טבלת אמצעי תשלום + seed |
+| `20260710120000_owner_booker_profiles_rls.sql` | (ביניים) גישת בעלים לפרופילי מזמינים |
+| `20260710140000_owner_booking_privacy.sql` | פרטיות: בעלים בלי זהות מזמין; RPC תפוסה |
+| `20260710150000_lock_roles.sql` | נעילת תפקידים בהרשמה + trigger |
+| `20260710160000_admin_rls.sql` | `is_admin()` + מדיניות מנהל |
+| `20260710170000_app_settings.sql` | הקפאת הזמנות; ביטול גישת מנהל לכרטיסים |
+| `20260710180000_admin_ops.sql` | השעיה, החזרים, `admin_activity_log` |
+| `20260710200000_google_oauth_profile_meta.sql` | שם/אווטאר מ-Google ב־`handle_new_user` |
+| `20260712120000_admin_delete_user.sql` | RPC למחיקת משתמש ע״י מנהל |
 
 ---
 
@@ -140,8 +150,9 @@ npm run dev
 
 | בעיה | פתרון |
 |------|--------|
-| "שגיאה בטעינת נתונים מהשרת" | הרץ מיגרציות (שלב 3) |
+| "שגיאה בטעינת נתונים מהשרת" | הרץ את **כל** המיגרציות (שלב 3) |
 | Login נכשל ב-Supabase | השתמש ב-`demo1234` או הרשם משתמש חדש |
 | Google OAuth נכשל | ודא Provider מופעל, Client Secret ב-Dashboard, Redirect URLs תואמים |
 | `npm run db:setup` נכשל | בדוק סיסמת DB ו-`SUPABASE_PROJECT_REF` |
-| "relation already exists" | המיגרציה כבר רצה — זה בסדר, אפשר לדלג |
+| "relation already exists" | המיגרציה כבר רצה — זה בסדר, אפשר לדלג / להמשיך לקובץ הבא |
+| טבלאות חסרות (`payment_methods` וכו') | הורצו רק המיגרציות הישנות — השלם את השאר לפי הסדר |

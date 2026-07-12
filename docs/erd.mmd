@@ -2,6 +2,9 @@ erDiagram
     AUTH_USERS ||--|| PROFILES : "id"
     PROFILES ||--o{ PARKINGS : "owner_id"
     PROFILES ||--o{ BOOKINGS : "user_id"
+    PROFILES ||--o{ PAYMENT_METHODS : "user_id"
+    PROFILES ||--o{ ADMIN_ACTIVITY_LOG : "actor_id"
+    PROFILES ||--o| APP_SETTINGS : "updated_by"
     PARKINGS ||--o{ BOOKINGS : "parking_id"
 
     AUTH_USERS {
@@ -10,12 +13,15 @@ erDiagram
     }
 
     PROFILES {
-        uuid id PK_FK
-        text email UK
+        uuid id PK
+        text email
         text name
         text phone
         text role
         text avatar
+        boolean suspended
+        timestamptz suspended_at
+        text suspended_reason
     }
 
     PARKINGS {
@@ -37,5 +43,34 @@ erDiagram
         date date
         text status
         numeric total_price
+        text payment_method
+        boolean refunded
+        timestamptz refunded_at
         jsonb review
+    }
+
+    PAYMENT_METHODS {
+        text id PK
+        uuid user_id FK
+        text category
+        text type
+        text label
+        boolean is_default
+    }
+
+    APP_SETTINGS {
+        text id PK
+        boolean bookings_disabled
+        text message
+        uuid updated_by FK
+    }
+
+    ADMIN_ACTIVITY_LOG {
+        uuid id PK
+        uuid actor_id FK
+        text actor_name
+        text action_type
+        text summary
+        text entity_type
+        text entity_label
     }
