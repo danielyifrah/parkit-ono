@@ -1,3 +1,5 @@
+<div dir="rtl" align="right">
+
 # Parkit — חניה חכמה
 
 **Parkit** היא פלטפורמת ווב שמחברת **נהגים** שמחפשים חניה ליד היעד לבין **בעלי חניות** שמפרסמים מקומות פנויים — עם מפה, סינון חכם, תמחור שקוף ופורטל ניהול לבעלים.
@@ -150,6 +152,8 @@ Parkit היא **שוק דו-צדדי** לחניות — לא אפליקציית 
 **דרישות:** Node.js 18+, מפתח Google Maps (Maps JavaScript API + Places API).  
 **אופציונלי:** פרויקט Supabase + מפתחות ב־`.env.local` (ראו [אינטגרציות](#אינטגרציות-חיצוניות) ו־[הגדרת Supabase](#supabase--הגדרה)).
 
+<div dir="ltr" align="left">
+
 ```bash
 git clone <repository-url>
 cd Parkit-Project
@@ -160,11 +164,17 @@ npm install
 npm run dev                  # http://localhost:5173
 ```
 
+</div>
+
+<div dir="ltr" align="left">
+
 ```bash
 npm run build    # בנייה לפרודקשן
 npm run preview  # תצוגה מקומית של ה-build
 npm run lint     # Oxlint
 ```
+
+</div>
 
 > `.env.local` ב־`.gitignore` — אל תעלה מפתחות ל-Git.
 
@@ -186,6 +196,8 @@ npm run lint     # Oxlint
 ---
 
 ## מבנה הפרויקט
+
+<div dir="ltr" align="left">
 
 ```
 Parkit-Project/
@@ -225,6 +237,8 @@ Parkit-Project/
 ├── package.json
 └── .env.local           # מקומי, ב-.gitignore
 ```
+
+</div>
 
 | תיקייה | תפקיד |
 |--------|--------|
@@ -373,10 +387,14 @@ Parkit-Project/
 
 הוסף ל־`.env.local` (מ-Supabase → Project Settings → API):
 
+<div dir="ltr" align="left">
+
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
+
+</div>
 
 ### 2. הרצת מיגרציות (חובה, פעם אחת)
 
@@ -388,11 +406,15 @@ Supabase → **SQL Editor** → העתק והרץ לפי סדר:
 
 **דרך ב — טרמינל:**
 
+<div dir="ltr" align="left">
+
 ```bash
 SUPABASE_DB_PASSWORD=your_db_password \
 SUPABASE_PROJECT_REF=your-project-ref \
 npm run db:setup
 ```
+
+</div>
 
 הסקריפט מריץ את **כל** קבצי ה-SQL מתיקיית `supabase/migrations/`.
 
@@ -439,3 +461,5 @@ npm run db:setup
 פרויקט לימודי / דמו · תמונות: [Pexels](https://www.pexels.com/) · מפות: [Google Maps Platform](https://maps.google.com/) · Auth: [Google Identity](https://developers.google.com/identity) via Supabase · FX: [ExchangeRate-API](https://www.exchangerate-api.com/)
 
 **גרסה:** 0.0.0 (MVP) · **שפה:** עברית (RTL) · **אזור:** תל אביב
+
+</div>
